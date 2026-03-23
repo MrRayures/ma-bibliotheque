@@ -1,0 +1,84 @@
+---
+import type { Book } from '../types/library';
+import BookCard from './BookCard.astro';
+
+interface Props {
+  name: string;
+  books: Book[];
+}
+
+const { name, books } = Astro.props;
+
+const ownedCount = books.filter((b) => b.status === 'owned').length;
+const missingCount = books.filter((b) => b.status === 'missing').length;
+---
+
+<section class="collection-group" data-collection data-search={name.toLowerCase()}>
+  <div class="mb-4 flex items-center justify-between">
+    <div>
+      <h2 class="text-lg font-bold text-neutral-900">{name}</h2>
+      <p class="text-sm text-neutral-500">
+        {ownedCount} / {books.length} tome{books.length > 1 ? 's' : ''} possédé{
+          ownedCount > 1 ? 's' : ''
+        }
+      </p>
+    </div>
+    {
+      missingCount > 0 && (
+        <button
+          type="button"
+          class="show-missing-btn rounded-full border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+          aria-pressed="false"
+          data-missing-count={missingCount}
+        >
+          <span class="btn-label">Afficher manquants ({missingCount})</span>
+        </button>
+      )
+    }
+  </div>
+  <ul
+    class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
+    role="list"
+  >
+    {
+      books.map((book) => (
+        <li data-status={book.status}>
+          <BookCard book={book} />
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-collection]').forEach((group) => {
+    const btn = group.querySelector<HTMLButtonElement>('.show-missing-btn');
+    const missingItems = group.querySelectorAll<HTMLElement>('[data-status="missing"]');
+
+    if (!btn || missingItems.length === 0) return;
+
+    let showMissing = false;
+
+    missingItems.forEach((item) => {
+      item.hidden = true;
+    });
+
+    btn.addEventListener('click', () => {
+      showMissing = !showMissing;
+      btn.setAttribute('aria-pressed', String(showMissing));
+
+      const label = btn.querySelector('.btn-label');
+      const count = btn.dataset.missingCount;
+
+      missingItems.forEach((item) => {
+        item.hidden = !showMissing;
+      });
+
+      if (label) {
+        label.textContent = showMissing
+          ? `Masquer manquants (${count})`
+          : `Afficher manquants (${count})`;
+      }
+    });
+  });
+</script>

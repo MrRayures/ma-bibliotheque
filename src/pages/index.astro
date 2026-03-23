@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SearchBar from '../components/SearchBar.astro';
+import libraryData from '../../data/library.json';
+---
+
+<BaseLayout title="Livres — Ma Bibliothèque">
+  <div class="mx-auto max-w-5xl px-4 py-8">
+    <div class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-neutral-900">Livres</h1>
+      <p id="book-count" class="text-sm text-neutral-500" aria-live="polite"></p>
+    </div>
+    <SearchBar placeholder="Rechercher par titre ou auteur..." />
+    <ul
+      id="book-grid"
+      class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+      role="list"
+      aria-label="Liste des livres"
+    >
+    </ul>
+    <p id="books-loading" class="mt-8 text-sm text-neutral-400">Chargement...</p>
+    <p id="books-empty" class="mt-8 text-sm text-neutral-400" hidden>
+      Aucun livre pour l'instant. Ajoutez vos premiers livres avec le bouton <strong class="font-medium text-neutral-700">+</strong>.
+    </p>
+  </div>
+</BaseLayout>
+
+<script define:vars={{ seedData: libraryData }}>
+  import { seedFromJson, getAllBooks, getCoverUrl } from '../utils/db';
+  import { createBookListItem } from '../utils/render';
+
+  async function init() {
+    await seedFromJson(seedData.books);
+
+    const books = (await getAllBooks()).filter((b) => b.status === 'owned');
+    const grid = document.getElementById('book-grid');
+    const loading = document.getElementById('books-loading');
+    const empty = document.getElementById('books-empty');
+    const count = document.getElementById('book-count');
+
+    if (!grid) return;
+
+    if (books.length === 0) {
+      if (loading) loading.hidden = true;
+      if (empty) empty.hidden = false;
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    for (const book of books) {
+      const coverUrl = await getCoverUrl(book.id);
+      const li = createBookListItem(book, coverUrl, `${book.title} ${book.authors.join(' ')}`);
+      fragment.appendChild(li);
+    }
+
+    grid.appendChild(fragment);
+
+    if (loading) loading.hidden = true;
+    if (count) count.textContent = `${books.length} livre${books.length > 1 ? 's' : ''}`;
+  }
+
+  init();
+</script>

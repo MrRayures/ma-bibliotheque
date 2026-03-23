@@ -3,6 +3,7 @@
 Bootstrap a complete feature module.
 
 ## Files Created
+
 ```
 src/features/{name}/
 ├── components/       # Feature-specific components
@@ -16,6 +17,7 @@ src/features/{name}/
 ```
 
 ## Conventions
+
 - Feature encapsulates its own state, components, logic
 - Only index.ts exports are public API
 - Types co-located in types.ts

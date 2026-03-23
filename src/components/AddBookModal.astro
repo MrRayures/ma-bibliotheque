@@ -1,0 +1,307 @@
+---
+---
+
+<dialog
+  id="add-book-modal"
+  class="fixed inset-0 m-auto w-full max-w-md rounded-xl border border-neutral-200 bg-white p-6 shadow-xl backdrop:bg-black/40"
+  aria-labelledby="modal-title"
+>
+  <div class="mb-6 flex items-center justify-between">
+    <h2 id="modal-title" class="text-lg font-bold text-neutral-900">Ajouter un livre</h2>
+    <button
+      id="modal-close"
+      type="button"
+      class="rounded-md p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+      aria-label="Fermer"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M18 6 6 18M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- État : recherche -->
+  <div id="modal-loading" hidden>
+    <p class="text-sm text-neutral-500">Recherche du livre...</p>
+  </div>
+
+  <!-- État : déjà possédé -->
+  <div id="modal-already-owned" hidden>
+    <p class="text-sm text-neutral-700">Ce livre est déjà dans ta bibliothèque.</p>
+  </div>
+
+  <!-- État : marquer comme possédé (était manquant) -->
+  <div id="modal-mark-owned" hidden>
+    <p class="mb-1 text-sm text-neutral-500">Ce livre est dans tes manquants :</p>
+    <p id="mark-owned-title" class="mb-4 font-semibold text-neutral-900"></p>
+    <div class="flex gap-3">
+      <button
+        id="mark-owned-confirm"
+        type="button"
+        class="flex-1 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+      >
+        Marquer comme possédé
+      </button>
+      <button
+        id="mark-owned-cancel"
+        type="button"
+        class="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100"
+      >
+        Annuler
+      </button>
+    </div>
+  </div>
+
+  <!-- État : formulaire (trouvé OL ou saisie manuelle) -->
+  <form id="modal-form" hidden novalidate>
+
+    <!-- Infos trouvées via Open Library -->
+    <div id="modal-ol-section" class="mb-4 flex gap-4">
+      <div id="modal-cover-preview" class="h-24 w-16 shrink-0 overflow-hidden rounded bg-neutral-100"></div>
+      <div class="min-w-0 flex flex-col gap-1">
+        <p id="modal-title-display" class="truncate font-semibold text-neutral-900"></p>
+        <p id="modal-authors-display" class="truncate text-sm text-neutral-500"></p>
+        <p id="modal-ean-label" class="font-mono text-xs text-neutral-400"></p>
+      </div>
+    </div>
+
+    <!-- Saisie manuelle (OL introuvable) -->
+    <div id="modal-manual-section" class="mb-4" hidden>
+      <p class="mb-3 text-sm text-neutral-500">
+        Livre introuvable dans Open Library. Renseignez les informations manuellement.
+      </p>
+      <div class="mb-3">
+        <label for="modal-title-input" class="mb-1 block text-sm font-medium text-neutral-700">
+          Titre <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          id="modal-title-input"
+          name="title-manual"
+          class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+        />
+      </div>
+      <div class="mb-3">
+        <label for="modal-authors-input" class="mb-1 block text-sm font-medium text-neutral-700">
+          Auteur(s) <span class="font-normal text-neutral-400">(optionnel)</span>
+        </label>
+        <input
+          type="text"
+          id="modal-authors-input"
+          name="authors-manual"
+          placeholder="ex : René Goscinny, Albert Uderzo"
+          class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+        />
+      </div>
+      <p class="font-mono text-xs text-neutral-400">EAN : <span id="modal-ean-manual"></span></p>
+    </div>
+
+    <!-- Champs communs -->
+    <fieldset class="mb-4">
+      <legend class="mb-2 text-sm font-medium text-neutral-700">Type</legend>
+      <div class="flex gap-4">
+        <label class="flex cursor-pointer items-center gap-1.5 text-sm">
+          <input type="radio" name="type" value="bd" class="accent-neutral-900" required /> BD
+        </label>
+        <label class="flex cursor-pointer items-center gap-1.5 text-sm">
+          <input type="radio" name="type" value="comics" class="accent-neutral-900" /> Comics
+        </label>
+        <label class="flex cursor-pointer items-center gap-1.5 text-sm">
+          <input type="radio" name="type" value="manga" class="accent-neutral-900" /> Manga
+        </label>
+      </div>
+    </fieldset>
+
+    <div class="mb-4">
+      <label for="modal-collection" class="mb-1 block text-sm font-medium text-neutral-700">
+        Collection <span class="font-normal text-neutral-400">(optionnel)</span>
+      </label>
+      <input
+        type="text"
+        id="modal-collection"
+        name="collection"
+        placeholder="ex : Astérix"
+        class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+      />
+    </div>
+
+    <div id="modal-volume-row" class="mb-6" hidden>
+      <label for="modal-volume" class="mb-1 block text-sm font-medium text-neutral-700">
+        Numéro de tome
+      </label>
+      <input
+        type="number"
+        id="modal-volume"
+        name="volume"
+        min="1"
+        placeholder="1"
+        class="w-32 rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+      />
+    </div>
+
+    <div class="flex gap-3">
+      <button
+        type="submit"
+        class="flex-1 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+      >
+        Ajouter
+      </button>
+      <button
+        type="button"
+        id="modal-cancel"
+        class="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100"
+      >
+        Annuler
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  import { getBookByEan, saveBook, saveCover } from '../utils/db';
+  import { lookupByEan, fetchCoverBlob, buildBook } from '../utils/openLibrary';
+  import type { Book, BookType } from '../types/library';
+
+  const modal = document.getElementById('add-book-modal') as HTMLDialogElement;
+  const form = document.getElementById('modal-form') as HTMLFormElement;
+
+  const states = {
+    loading: document.getElementById('modal-loading')!,
+    alreadyOwned: document.getElementById('modal-already-owned')!,
+    markOwned: document.getElementById('modal-mark-owned')!,
+    form,
+  };
+
+  const olSection = document.getElementById('modal-ol-section')!;
+  const manualSection = document.getElementById('modal-manual-section')!;
+  const titleDisplay = document.getElementById('modal-title-display')!;
+  const authorsDisplay = document.getElementById('modal-authors-display')!;
+  const eanLabel = document.getElementById('modal-ean-label')!;
+  const coverPreview = document.getElementById('modal-cover-preview')!;
+  const markOwnedTitle = document.getElementById('mark-owned-title')!;
+  const titleInput = document.getElementById('modal-title-input') as HTMLInputElement;
+  const authorsInput = document.getElementById('modal-authors-input') as HTMLInputElement;
+  const eanManual = document.getElementById('modal-ean-manual')!;
+  const collectionInput = document.getElementById('modal-collection') as HTMLInputElement;
+  const volumeRow = document.getElementById('modal-volume-row')!;
+
+  let pendingCoverBlob: Blob | null = null;
+  let pendingEan = '';
+  let pendingCoverUrl: string | null = null;
+  let pendingMissingBook: Book | null = null;
+  let isManual = false;
+
+  function showOnly(key: keyof typeof states) {
+    Object.values(states).forEach((el) => { el.hidden = true; });
+    states[key].hidden = false;
+  }
+
+  function showForm(manual: boolean) {
+    isManual = manual;
+    olSection.hidden = manual;
+    manualSection.hidden = !manual;
+    showOnly('form');
+  }
+
+  function closeModal() {
+    modal.close();
+    form.reset();
+    volumeRow.hidden = true;
+    coverPreview.innerHTML = '';
+    pendingCoverBlob = null;
+    pendingEan = '';
+    pendingCoverUrl = null;
+    pendingMissingBook = null;
+    isManual = false;
+  }
+
+  document.getElementById('modal-close')?.addEventListener('click', closeModal);
+  document.getElementById('modal-cancel')?.addEventListener('click', closeModal);
+  document.getElementById('mark-owned-cancel')?.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  collectionInput.addEventListener('input', () => {
+    volumeRow.hidden = collectionInput.value.trim() === '';
+  });
+
+  document.getElementById('mark-owned-confirm')?.addEventListener('click', async () => {
+    if (!pendingMissingBook) return;
+    await saveBook({ ...pendingMissingBook, status: 'owned' });
+    closeModal();
+    window.location.reload();
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    const type = data.get('type') as BookType | null;
+    if (!type) return;
+
+    const title = isManual
+      ? (data.get('title-manual') as string).trim()
+      : (titleDisplay.textContent ?? '');
+
+    if (!title) return;
+
+    const authors = isManual
+      ? (data.get('authors-manual') as string).split(',').map((a) => a.trim()).filter(Boolean)
+      : (authorsDisplay.textContent ?? '').split(', ').filter(Boolean);
+
+    const collection = (data.get('collection') as string).trim() || null;
+    const volume = collection ? parseInt(data.get('volume') as string, 10) || null : null;
+
+    const book = buildBook({ title, authors, coverUrl: pendingCoverUrl, ean: pendingEan }, type, collection, volume);
+    await saveBook(book);
+    if (pendingCoverBlob) await saveCover(book.id, pendingCoverBlob);
+
+    closeModal();
+    window.location.reload();
+  });
+
+  document.addEventListener('ean-detected', async (e) => {
+    const ean = (e as CustomEvent<{ ean: string }>).detail.ean;
+    pendingEan = ean;
+    showOnly('loading');
+    modal.showModal();
+
+    const existing = await getBookByEan(ean);
+
+    if (existing?.status === 'owned') {
+      showOnly('alreadyOwned');
+      return;
+    }
+
+    if (existing?.status === 'missing') {
+      pendingMissingBook = existing;
+      markOwnedTitle.textContent = existing.title;
+      showOnly('markOwned');
+      return;
+    }
+
+    const result = await lookupByEan(ean);
+
+    if (!result) {
+      eanManual.textContent = ean;
+      showForm(true);
+      return;
+    }
+
+    titleDisplay.textContent = result.title;
+    authorsDisplay.textContent = result.authors.join(', ');
+    eanLabel.textContent = `EAN : ${ean}`;
+    pendingCoverUrl = result.coverUrl;
+
+    if (result.coverUrl) {
+      pendingCoverBlob = await fetchCoverBlob(result.coverUrl);
+      if (pendingCoverBlob) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(pendingCoverBlob);
+        img.alt = '';
+        img.className = 'h-full w-full object-cover';
+        coverPreview.appendChild(img);
+      }
+    }
+
+    showForm(false);
+  });
+</script>

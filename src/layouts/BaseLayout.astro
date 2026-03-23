@@ -1,0 +1,122 @@
+---
+import '../styles/global.css';
+import AddBookButton from '../components/AddBookButton.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Ma Bibliothèque',
+  description = 'Gestion de ma bibliothèque personnelle de comics, mangas et BD',
+} = Astro.props;
+
+const currentPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#171717" />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen bg-neutral-50 text-neutral-900">
+    <header class="sticky top-0 z-10 border-b border-neutral-200 bg-white">
+      <div class="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+        <a href="/" class="text-base font-bold tracking-tight text-neutral-900">
+          Ma Bibliothèque
+        </a>
+        <div class="flex items-center gap-2">
+          <nav aria-label="Navigation principale">
+            <ul class="flex gap-1" role="list">
+              <li>
+                <a
+                  href="/"
+                  class={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                    currentPath === '/'
+                      ? 'bg-neutral-900 text-white'
+                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                  }`}
+                  aria-current={currentPath === '/' ? 'page' : undefined}
+                >
+                  Livres
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/collections"
+                  class={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                    currentPath === '/collections'
+                      ? 'bg-neutral-900 text-white'
+                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                  }`}
+                  aria-current={currentPath === '/collections' ? 'page' : undefined}
+                >
+                  Collections
+                </a>
+              </li>
+            </ul>
+          </nav>
+          <!-- Export / Import -->
+          <div class="flex items-center gap-1 border-l border-neutral-200 pl-2">
+            <button
+              id="export-btn"
+              type="button"
+              title="Exporter la bibliothèque (JSON)"
+              class="rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+              aria-label="Exporter la bibliothèque"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+            <label
+              title="Importer une bibliothèque (JSON)"
+              class="cursor-pointer rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-neutral-900"
+              aria-label="Importer une bibliothèque"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <input id="import-input" type="file" accept=".json" class="sr-only" />
+            </label>
+          </div>
+        </div>
+      </div>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <AddBookButton />
+  </body>
+</html>
+
+<script>
+  import { exportToJson, importFromJson } from '../utils/db';
+
+  document.getElementById('export-btn')?.addEventListener('click', async () => {
+    const json = await exportToJson();
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bibliotheque-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('import-input')?.addEventListener('change', async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    await importFromJson(text);
+    window.location.reload();
+  });
+</script>

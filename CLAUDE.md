@@ -21,6 +21,7 @@ The only exception: trivial fixes explicitly requested (typo, single-line change
 ## First Run
 
 On your FIRST interaction with this project:
+
 1. **Explore** — read project structure, key config files, and existing patterns
 2. **Report** — summarize what you found (stack, architecture, conventions detected)
 3. **Confirm** — ask the user if your understanding is correct before any work
@@ -70,6 +71,7 @@ src/
 - Type-only imports: `import type { Foo }`
 
 ### File Organization
+
 - Imports: external → internal → relative → types
 - Co-locate related files (Component + styles + tests + types)
 - Barrel exports (index.ts) for public APIs only
@@ -78,6 +80,7 @@ src/
 ## Hooks
 
 Configured in `.claude/settings.json` — see file for details.
+
 - Auto-format on save
 - File protection (.env, .pem)
 - Lint on save
@@ -87,6 +90,7 @@ Configured in `.claude/settings.json` — see file for details.
 ## Agents
 
 Available in `.claude/agents/`:
+
 - `quality-checker.md`
 - `a11y-checker.md`
 
@@ -95,6 +99,7 @@ Launch: `claude -a quality-checker "Audit src/components/"`
 ## Skills
 
 Available slash commands:
+
 - `/component`
 - `/scaffold`
 - `/debug`
@@ -109,6 +114,7 @@ Servers configured in `.mcp.json`.
 ## Memory
 
 Auto-memory enabled. Guidelines:
+
 - Save confirmed patterns, not speculative conclusions
 - Update or remove memories that prove wrong
 - Keep MEMORY.md < 200 lines
@@ -124,6 +130,7 @@ Auto-memory enabled. Guidelines:
 ## Verification
 
 After EVERY code change, verify before declaring done:
+
 1. **Build** — `npm run build` passes with 0 errors
 2. **Lint** — no new warnings or errors introduced
 3. **Test** — existing tests still pass, new tests written if needed
@@ -135,6 +142,7 @@ If verification fails, fix the issue before moving on.
 ## When Things Break
 
 If your changes cause errors:
+
 1. **Stop** — do not add more code on top of broken code
 2. **Revert** — undo the last change that caused the error
 3. **Analyze** — read the error message carefully, identify root cause

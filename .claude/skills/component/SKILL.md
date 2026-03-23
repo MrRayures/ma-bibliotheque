@@ -3,6 +3,7 @@
 Scaffold a new component.
 
 ## Files Created
+
 ```
 src/components/{Name}/
 ├── {Name}.tsx        # Implementation
@@ -12,6 +13,7 @@ src/components/{Name}/
 ```
 
 ## Conventions
+
 - Typed Props interface with JSDoc
 - Default export for the component
 - Named export for types
@@ -19,6 +21,7 @@ src/components/{Name}/
 - BEM flat selectors with c- prefix
 
 ## Post-creation Checklist
+
 1. Renders without errors
 2. Keyboard accessible
 3. Props documented
