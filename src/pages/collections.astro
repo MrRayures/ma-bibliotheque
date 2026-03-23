@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SearchBar from '../components/SearchBar.astro';
-import libraryData from '../../data/library.json';
 ---
 
 <BaseLayout
@@ -17,82 +16,59 @@ import libraryData from '../../data/library.json';
     <div id="collections-container" class="mt-8 flex flex-col gap-10"></div>
     <p id="collections-loading" class="mt-8 text-sm text-neutral-400">Chargement...</p>
     <p id="collections-empty" class="mt-8 text-sm text-neutral-400" hidden>
-      Aucune collection pour l'instant. Ajoutez vos premiers livres avec le bouton <strong class="font-medium text-neutral-700">+</strong>.
+      Aucune collection pour l'instant.
     </p>
   </div>
 </BaseLayout>
 
-<script define:vars={{ seedData: libraryData }}>
-  import { seedFromJson, getAllBooks, getCoverUrl } from '../utils/db';
-  import { createBookCard } from '../utils/render';
+<script>
   import type { Book } from '../types/library';
+import { deleteBook, getAllBooks, getEffectiveCoverUrl } from '../utils/api';
+import { isLoggedIn } from '../utils/auth';
+import { createBookListItem } from '../utils/render';
 
-  function groupByCollection(books) {
-    const map = new Map();
+  function groupByCollection(books: Book[]): Map<string, Book[]> {
+    const map = new Map<string, Book[]>();
     for (const book of books) {
       if (!book.collection) continue;
       const { slug } = book.collection;
       if (!map.has(slug)) map.set(slug, []);
-      map.get(slug).push(book);
+      map.get(slug)!.push(book);
     }
     for (const [slug, items] of map) {
-      map.set(
-        slug,
-        items.sort((a, b) => (a.collection?.volume ?? 0) - (b.collection?.volume ?? 0)),
-      );
+      map.set(slug, items.sort((a, b) => (a.collection?.volume ?? 0) - (b.collection?.volume ?? 0)));
     }
     return map;
   }
 
-  function createCollectionSection(name, books) {
-    const owned = books.filter((b) => b.status === 'owned').length;
-    const missing = books.filter((b) => b.status === 'missing');
-
+  function createCollectionSection(name: string, books: Book[]): HTMLElement {
     const section = document.createElement('section');
     section.dataset.collection = '';
     section.dataset.search = name.toLowerCase();
 
     const header = document.createElement('div');
-    header.className = 'mb-4 flex items-center justify-between';
+    header.className = 'mb-4';
 
-    const headerLeft = document.createElement('div');
     const heading = document.createElement('h2');
     heading.className = 'text-lg font-bold text-neutral-900';
     heading.textContent = name;
     const subtitle = document.createElement('p');
     subtitle.className = 'text-sm text-neutral-500';
-    subtitle.textContent = `${owned} / ${books.length} tome${books.length > 1 ? 's' : ''} possédé${owned > 1 ? 's' : ''}`;
-    headerLeft.appendChild(heading);
-    headerLeft.appendChild(subtitle);
-    header.appendChild(headerLeft);
-
-    if (missing.length > 0) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className =
-        'show-missing-btn rounded-full border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900';
-      btn.setAttribute('aria-pressed', 'false');
-      btn.dataset.missingCount = String(missing.length);
-      const label = document.createElement('span');
-      label.className = 'btn-label';
-      label.textContent = `Afficher manquants (${missing.length})`;
-      btn.appendChild(label);
-      header.appendChild(btn);
-    }
-
+    subtitle.textContent = `${books.length} tome${books.length > 1 ? 's' : ''}`;
+    header.appendChild(heading);
+    header.appendChild(subtitle);
     section.appendChild(header);
     return section;
   }
 
   async function init() {
-    await seedFromJson(seedData.books);
-
     const books = await getAllBooks();
     const collections = groupByCollection(books);
     const container = document.getElementById('collections-container');
     const loading = document.getElementById('collections-loading');
     const empty = document.getElementById('collections-empty');
     const countEl = document.getElementById('collection-count');
+    const loggedIn = isLoggedIn();
 
     if (!container) return;
 
@@ -107,46 +83,36 @@ import libraryData from '../../data/library.json';
       const section = createCollectionSection(name, collectionBooks);
 
       const grid = document.createElement('ul');
-      grid.className =
-        'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6';
+      grid.className = 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6';
       grid.setAttribute('role', 'list');
 
       for (const book of collectionBooks) {
-        const coverUrl = await getCoverUrl(book.id);
-        const li = document.createElement('li');
-        li.dataset.status = book.status;
-        if (book.status === 'missing') li.hidden = true;
-        li.appendChild(createBookCard(book, coverUrl));
+        const coverUrl = getEffectiveCoverUrl(book);
+        const li = createBookListItem(book, coverUrl, book.title.toLowerCase(), loggedIn);
         grid.appendChild(li);
       }
 
       section.appendChild(grid);
-
-      // toggle missing
-      const btn = section.querySelector('.show-missing-btn');
-      if (btn) {
-        let shown = false;
-        btn.addEventListener('click', () => {
-          shown = !shown;
-          btn.setAttribute('aria-pressed', String(shown));
-          const label = btn.querySelector('.btn-label');
-          const count = btn.dataset.missingCount;
-          section.querySelectorAll('[data-status="missing"]').forEach((el) => {
-            el.hidden = !shown;
-          });
-          if (label)
-            label.textContent = shown
-              ? `Masquer manquants (${count})`
-              : `Afficher manquants (${count})`;
-        });
-      }
-
       container.appendChild(section);
     }
 
+    // Handler suppression (boutons présents uniquement si loggedIn)
+    container.addEventListener('click', async (e) => {
+      const btn = (e.target as Element).closest('[data-delete-id]') as HTMLElement | null;
+      if (!btn) return;
+      if (!confirm('Supprimer ce livre ?')) return;
+      const id = btn.dataset.deleteId!;
+      await deleteBook(id);
+      const li = btn.closest('li');
+      const section = li?.closest('section');
+      li?.remove();
+      if (section && section.querySelectorAll('li').length === 0) section.remove();
+      const remaining = container.querySelectorAll('section').length;
+      if (countEl) countEl.textContent = remaining > 0 ? `${remaining} collection${remaining > 1 ? 's' : ''}` : '';
+    });
+
     if (loading) loading.hidden = true;
-    if (countEl)
-      countEl.textContent = `${collections.size} collection${collections.size > 1 ? 's' : ''}`;
+    if (countEl) countEl.textContent = `${collections.size} collection${collections.size > 1 ? 's' : ''}`;
   }
 
   init();

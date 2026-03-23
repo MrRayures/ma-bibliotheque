@@ -1,6 +1,5 @@
 ---
 import '../styles/global.css';
-import AddBookButton from '../components/AddBookButton.astro';
 
 interface Props {
   title?: string;
@@ -12,7 +11,7 @@ const {
   description = 'Gestion de ma bibliothèque personnelle de comics, mangas et BD',
 } = Astro.props;
 
-const currentPath = Astro.url.pathname;
+const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
 ---
 
 <!doctype html>
@@ -31,7 +30,7 @@ const currentPath = Astro.url.pathname;
     <header class="sticky top-0 z-10 border-b border-neutral-200 bg-white">
       <div class="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <a href="/" class="text-base font-bold tracking-tight text-neutral-900">
-          Ma Bibliothèque
+          Bibliothèque
         </a>
         <div class="flex items-center gap-2">
           <nav aria-label="Navigation principale">
@@ -64,29 +63,40 @@ const currentPath = Astro.url.pathname;
               </li>
             </ul>
           </nav>
-          <!-- Export / Import -->
           <div class="flex items-center gap-1 border-l border-neutral-200 pl-2">
+            <!-- Bouton déconnexion (visible si connecté) -->
             <button
-              id="export-btn"
+              id="logout-btn"
               type="button"
-              title="Exporter la bibliothèque (JSON)"
-              class="rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-              aria-label="Exporter la bibliothèque"
+              aria-label="Se déconnecter"
+              class="hidden rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
               </svg>
             </button>
-            <label
-              title="Importer une bibliothèque (JSON)"
-              class="cursor-pointer rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-neutral-900"
-              aria-label="Importer une bibliothèque"
+            <!-- Bouton connexion (visible si non connecté) -->
+            <button
+              id="login-btn"
+              type="button"
+              aria-label="Se connecter"
+              class="rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
-              <input id="import-input" type="file" accept=".json" class="sr-only" />
-            </label>
+            </button>
+            <!-- Bouton options (visible si connecté) -->
+            <button
+              id="options-btn"
+              type="button"
+              aria-label="Options"
+              class="hidden rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -94,13 +104,238 @@ const currentPath = Astro.url.pathname;
     <main>
       <slot />
     </main>
-    <AddBookButton />
+    <!-- FAB Ajouter (visible si connecté) -->
+    <a
+      id="fab-add"
+      href="/ajouter"
+      aria-label="Ajouter un livre"
+      class="hidden fixed bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-neutral-900 text-white shadow-lg transition-transform hover:scale-105 hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 active:scale-95"
+    >
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+    </a>
+
+    <!-- Dialog Options -->
+    <dialog
+      id="options-dialog"
+      class="w-full max-w-sm rounded-xl border border-neutral-200 bg-white p-0 shadow-xl backdrop:bg-black/50"
+      aria-labelledby="options-title"
+    >
+      <div class="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+        <h2 id="options-title" class="text-sm font-semibold text-neutral-900">Options</h2>
+        <button
+          id="options-close"
+          type="button"
+          aria-label="Fermer"
+          class="rounded p-1 text-neutral-400 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-1 p-3">
+        <!-- Export -->
+        <button
+          id="export-btn"
+          type="button"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-neutral-700 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Exporter (JSON)
+        </button>
+
+        <!-- Import -->
+        <label
+          class="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-neutral-700 hover:bg-neutral-100 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-neutral-900"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Importer (JSON)
+          <input id="import-input" type="file" accept=".json" class="sr-only" />
+        </label>
+
+        <hr class="my-1 border-neutral-100" />
+
+        <!-- Supprimer -->
+        <div id="delete-zone">
+          <button
+            id="delete-btn"
+            type="button"
+            class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+            Supprimer tous mes livres
+          </button>
+          <div id="delete-confirm" class="hidden rounded-lg bg-red-50 p-3 mt-1">
+            <p class="mb-3 text-xs text-red-700">Cette action est irréversible. Tous vos livres et couvertures seront supprimés.</p>
+            <div class="flex gap-2">
+              <button
+                id="delete-confirm-btn"
+                type="button"
+                class="flex-1 rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+              >
+                Oui, supprimer
+              </button>
+              <button
+                id="delete-cancel-btn"
+                type="button"
+                class="flex-1 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Dialog Login -->
+    <dialog
+      id="login-dialog"
+      class="w-full max-w-xs rounded-xl border border-neutral-200 bg-white p-0 shadow-xl backdrop:bg-black/50"
+      aria-labelledby="login-title"
+    >
+      <div class="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+        <h2 id="login-title" class="text-sm font-semibold text-neutral-900">Connexion</h2>
+        <button
+          id="login-close"
+          type="button"
+          aria-label="Fermer"
+          class="rounded p-1 text-neutral-400 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="flex flex-col gap-3 p-5">
+        <label for="login-password" class="text-sm text-neutral-700">Mot de passe</label>
+        <div class="relative">
+          <input
+            type="password"
+            id="login-password"
+            autocomplete="current-password"
+            class="w-full rounded-lg border border-neutral-200 px-3 py-2 pr-10 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+          />
+          <button
+            id="toggle-password"
+            type="button"
+            aria-label="Afficher le mot de passe"
+            class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-400 hover:text-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+          >
+            <!-- Œil ouvert -->
+            <svg id="icon-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+            <!-- Œil barré (caché par défaut) -->
+            <svg id="icon-eye-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="hidden">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          </button>
+        </div>
+        <button
+          id="login-submit"
+          type="button"
+          class="w-full rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+        >
+          Se connecter
+        </button>
+        <p id="login-error" class="hidden text-xs text-red-600" aria-live="polite"></p>
+      </div>
+    </dialog>
   </body>
 </html>
 
 <script>
-  import { exportToJson, importFromJson } from '../utils/db';
+  import { isLoggedIn, login, logout } from '../utils/auth';
+  import { exportToJson, importFromJson, clearAllBooks } from '../utils/api';
 
+  // ─── État auth ─────────────────────────────────────────────────────────────────
+
+  function applyAuthState(): void {
+    const loggedIn = isLoggedIn();
+    document.getElementById('options-btn')?.classList.toggle('hidden', !loggedIn);
+    document.getElementById('fab-add')?.classList.toggle('hidden', !loggedIn);
+    document.getElementById('login-btn')?.classList.toggle('hidden', loggedIn);
+    document.getElementById('logout-btn')?.classList.toggle('hidden', !loggedIn);
+  }
+
+  applyAuthState();
+
+  // ─── Login dialog ──────────────────────────────────────────────────────────────
+
+  const loginDialog = document.getElementById('login-dialog') as HTMLDialogElement;
+  const loginError = document.getElementById('login-error')!;
+
+  document.getElementById('login-btn')?.addEventListener('click', () => {
+    loginError.classList.add('hidden');
+    loginError.textContent = '';
+    loginDialog.showModal();
+  });
+
+  document.getElementById('login-close')?.addEventListener('click', () => loginDialog.close());
+  loginDialog.addEventListener('click', (e) => { if (e.target === loginDialog) loginDialog.close(); });
+
+  document.getElementById('login-submit')?.addEventListener('click', async () => {
+    const pwd = (document.getElementById('login-password') as HTMLInputElement).value;
+    const ok = await login(pwd);
+    if (ok) {
+      loginDialog.close();
+      window.location.reload();
+    } else {
+      loginError.textContent = 'Mot de passe incorrect';
+      loginError.classList.remove('hidden');
+    }
+  });
+
+  document.getElementById('login-password')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('login-submit')?.click();
+  });
+
+  // Toggle affichage mot de passe
+  document.getElementById('toggle-password')?.addEventListener('click', () => {
+    const input = document.getElementById('login-password') as HTMLInputElement;
+    const eyeOpen = document.getElementById('icon-eye')!;
+    const eyeOff = document.getElementById('icon-eye-off')!;
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    eyeOpen.classList.toggle('hidden', isHidden);
+    eyeOff.classList.toggle('hidden', !isHidden);
+    (document.getElementById('toggle-password') as HTMLButtonElement).setAttribute(
+      'aria-label',
+      isHidden ? 'Masquer le mot de passe' : 'Afficher le mot de passe',
+    );
+  });
+
+  // ─── Logout ────────────────────────────────────────────────────────────────────
+
+  document.getElementById('logout-btn')?.addEventListener('click', () => {
+    logout();
+    window.location.reload();
+  });
+
+  // ─── Options dialog ────────────────────────────────────────────────────────────
+
+  const optionsDialog = document.getElementById('options-dialog') as HTMLDialogElement;
+  const deleteConfirm = document.getElementById('delete-confirm')!;
+
+  document.getElementById('options-btn')?.addEventListener('click', () => optionsDialog.showModal());
+  document.getElementById('options-close')?.addEventListener('click', () => optionsDialog.close());
+  optionsDialog.addEventListener('click', (e) => { if (e.target === optionsDialog) optionsDialog.close(); });
+
+  optionsDialog.addEventListener('close', () => {
+    deleteConfirm.classList.add('hidden');
+  });
+
+  // Export
   document.getElementById('export-btn')?.addEventListener('click', async () => {
     const json = await exportToJson();
     const blob = new Blob([json], { type: 'application/json' });
@@ -110,13 +345,36 @@ const currentPath = Astro.url.pathname;
     a.download = `bibliotheque-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    optionsDialog.close();
   });
 
+  // Import
   document.getElementById('import-input')?.addEventListener('change', async (e) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
     const text = await file.text();
-    await importFromJson(text);
+    try {
+      await importFromJson(text);
+      window.location.reload();
+    } catch (err) {
+      alert((err as Error).message);
+    }
+  });
+
+  // Supprimer — étape 1
+  document.getElementById('delete-btn')?.addEventListener('click', () => {
+    deleteConfirm.classList.remove('hidden');
+  });
+
+  // Supprimer — étape 2 : confirmer
+  document.getElementById('delete-confirm-btn')?.addEventListener('click', async () => {
+    await clearAllBooks();
+    optionsDialog.close();
     window.location.reload();
+  });
+
+  // Supprimer — annuler
+  document.getElementById('delete-cancel-btn')?.addEventListener('click', () => {
+    deleteConfirm.classList.add('hidden');
   });
 </script>

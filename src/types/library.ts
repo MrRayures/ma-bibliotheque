@@ -1,6 +1,3 @@
-export type BookType = "comics" | "manga" | "bd";
-export type BookStatus = "owned" | "missing";
-
 export interface BookCollection {
   name: string;
   slug: string;
@@ -10,12 +7,11 @@ export interface BookCollection {
 export interface Book {
   id: string;
   title: string;
+  subtitle: string | null;
   authors: string[];
   ean: string;
-  type: BookType;
   collection: BookCollection | null;
   cover: string | null;
-  status: BookStatus;
   addedAt: string;
 }
 

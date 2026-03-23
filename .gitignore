@@ -17,6 +17,9 @@ pnpm-debug.log*
 .env
 .env.production
 
+# configuration locale (token, secrets)
+public/api/config.php
+
 # macOS-specific files
 .DS_Store
 

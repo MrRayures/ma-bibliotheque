@@ -1,0 +1,503 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import BarcodeScanner from '../components/BarcodeScanner.astro';
+---
+
+<BaseLayout title="Ajouter un livre — Ma Bibliothèque">
+  <BarcodeScanner />
+
+  <div class="mx-auto max-w-lg px-4 pb-28 pt-8">
+    <h1 class="mb-8 text-2xl font-bold text-neutral-900">Ajouter un livre</h1>
+
+    <!-- Champ EAN -->
+    <div class="mb-6">
+      <label for="ean-input" class="mb-1 block text-sm font-medium text-neutral-700">
+        EAN / ISBN
+      </label>
+      <div class="flex gap-2">
+        <input
+          type="text"
+          id="ean-input"
+          inputmode="numeric"
+          maxlength="13"
+          placeholder="9782..."
+          autocomplete="off"
+          class="flex-1 rounded-lg border border-neutral-200 px-3 py-2.5 text-sm font-mono focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+          aria-describedby="ean-status"
+        />
+        <button
+          type="button"
+          id="scan-btn"
+          class="flex items-center gap-2 rounded-lg border border-neutral-200 px-4 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+            <rect x="7" y="7" width="10" height="10" rx="1"/>
+          </svg>
+          Scanner
+        </button>
+      </div>
+      <p id="ean-status" class="mt-2 text-xs" aria-live="polite"></p>
+    </div>
+
+    <!-- Infos livre -->
+    <div id="book-info" class="mb-6 hidden">
+      <div class="flex gap-4">
+        <div
+          id="cover-preview"
+          class="h-28 w-20 shrink-0 overflow-hidden rounded-lg bg-neutral-100"
+        ></div>
+        <div class="flex min-w-0 flex-1 flex-col gap-3">
+          <div>
+            <label for="title-input" class="mb-1 block text-sm font-medium text-neutral-700">
+              Titre <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="title-input"
+              name="title"
+              required
+              class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 read-only:bg-neutral-50 read-only:text-neutral-600"
+            />
+          </div>
+          <div>
+            <label for="subtitle-input" class="mb-1 block text-sm font-medium text-neutral-700">
+              Sous-titre <span class="font-normal text-neutral-400">(optionnel)</span>
+            </label>
+            <input
+              type="text"
+              id="subtitle-input"
+              name="subtitle"
+              class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 read-only:bg-neutral-50 read-only:text-neutral-600"
+            />
+          </div>
+          <div>
+            <label for="authors-input" class="mb-1 block text-sm font-medium text-neutral-700">
+              Auteur(s)
+            </label>
+            <input
+              type="text"
+              id="authors-input"
+              name="authors"
+              placeholder="ex : René Goscinny, Albert Uderzo"
+              class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 read-only:bg-neutral-50 read-only:text-neutral-600"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Champs supplémentaires -->
+    <div id="extra-fields" class="hidden">
+      <div class="mb-4">
+        <p class="mb-2 text-sm font-medium text-neutral-700">
+          Collection <span class="font-normal text-neutral-400">(optionnel)</span>
+        </p>
+
+        <!-- Nouvelle collection -->
+        <div class="mb-2">
+          <!-- Séparateur + select collections existantes (masqués si aucune) -->
+          <div id="collection-existing-wrapper" class="hidden">
+            <label for="collection-select" class="mb-1 block text-xs text-neutral-500">
+              Ajouter à une collection existante
+            </label>
+            <select
+              id="collection-select"
+              class="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+            >
+              <option value="">— Sélectionner —</option>
+            </select>
+            <div class="my-3 flex items-center gap-2 text-xs text-neutral-400">
+              <hr class="flex-1 border-neutral-200" />
+              <span>ou</span>
+              <hr class="flex-1 border-neutral-200" />
+            </div>
+          </div>
+          
+          <label for="collection-input" class="mb-1 block text-xs text-neutral-500">
+            Nouvelle collection
+          </label>
+          <input
+            type="text"
+            id="collection-input"
+            name="collection"
+            placeholder="ex : Astérix"
+            autocomplete="off"
+            class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+          />
+        </div>
+
+        
+      </div>
+
+      <div id="volume-row" class="mb-6 hidden">
+        <label for="volume-input" class="mb-1 block text-sm font-medium text-neutral-700">
+          Numéro de tome
+        </label>
+        <input
+          type="number"
+          id="volume-input"
+          name="volume"
+          min="1"
+          placeholder="1"
+          class="w-32 rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+        />
+      </div>
+
+    </div>
+
+    <!-- État : déjà possédé -->
+    <div id="state-owned" class="hidden rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+      <p class="text-sm text-neutral-700">Ce livre est déjà dans ta bibliothèque.</p>
+    </div>
+
+    <!-- État : succès -->
+    <div id="state-success" class="hidden rounded-lg border border-green-200 bg-green-50 p-4">
+      <p class="mb-3 text-sm text-green-700">Livre ajouté avec succès !</p>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          id="add-another-btn"
+          class="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700"
+        >
+          Ajouter un autre
+        </button>
+        <a
+          href="/"
+          class="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100"
+        >
+          Voir ma bibliothèque
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barre d'actions fixe (visible quand le formulaire est affiché) -->
+  <div
+    id="form-actions"
+    class="fixed bottom-0 left-0 right-0 hidden border-t border-neutral-200 bg-white px-4 py-3 shadow-[0_-1px_8px_rgba(0,0,0,0.06)]"
+  >
+    <div class="mx-auto flex max-w-lg gap-3">
+      <a
+        href="/"
+        id="cancel-btn"
+        class="flex flex-1 items-center justify-center rounded-lg border border-neutral-200 px-4 py-3 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+      >
+        Annuler
+      </a>
+      <button
+        type="button"
+        id="submit-btn"
+        class="flex flex-1 items-center justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+      >
+        Ajouter le livre
+      </button>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import type { Book } from '../types/library';
+import { getBookByEan, getBookById, getCollectionNames, getEffectiveCoverUrl, saveBook, uploadCover } from '../utils/api';
+import { isLoggedIn } from '../utils/auth';
+import { buildBook, extractVolume, fetchCoverBlob, lookupByEan } from '../utils/openLibrary';
+import { translateToFrench } from '../utils/translate';
+
+  // ─── Guard auth ────────────────────────────────────────────────────────────────
+
+  if (!isLoggedIn()) {
+    window.location.replace('/');
+  }
+
+  // Masquer le FAB sur cette page
+  document.getElementById('fab-add')?.classList.add('hidden');
+
+  // ─── Barre d'actions fixe ─────────────────────────────────────────────────────
+
+  const formActions = document.getElementById('form-actions')!;
+
+  function showFormActions(): void {
+    formActions.classList.remove('hidden');
+  }
+
+  function hideFormActions(): void {
+    formActions.classList.add('hidden');
+  }
+
+  // Éléments
+  const eanInput = document.getElementById('ean-input') as HTMLInputElement;
+  const scanBtn = document.getElementById('scan-btn')!;
+  const eanStatus = document.getElementById('ean-status')!;
+  const bookInfo = document.getElementById('book-info')!;
+  const extraFields = document.getElementById('extra-fields')!;
+  const coverPreview = document.getElementById('cover-preview')!;
+  const titleInput = document.getElementById('title-input') as HTMLInputElement;
+  const subtitleInput = document.getElementById('subtitle-input') as HTMLInputElement;
+  const authorsInput = document.getElementById('authors-input') as HTMLInputElement;
+  const collectionInput = document.getElementById('collection-input') as HTMLInputElement;
+  const collectionSelect = document.getElementById('collection-select') as HTMLSelectElement;
+  const collectionExistingWrapper = document.getElementById('collection-existing-wrapper')!;
+  const volumeRow = document.getElementById('volume-row')!;
+  const submitBtn = document.getElementById('submit-btn')!;
+  const stateOwned = document.getElementById('state-owned')!;
+  const stateSuccess = document.getElementById('state-success')!;
+  const addAnotherBtn = document.getElementById('add-another-btn')!;
+
+  // ─── Mode édition ──────────────────────────────────────────────────────────────
+
+  const editId = new URLSearchParams(location.search).get('id');
+
+  if (editId) {
+    const existing = await getBookById(editId);
+    if (existing) {
+      (document.querySelector('h1') as HTMLElement).textContent = 'Modifier le livre';
+      submitBtn.textContent = 'Enregistrer les modifications';
+      scanBtn.hidden = true;
+
+      eanInput.value = existing.ean;
+      eanInput.readOnly = true;
+      titleInput.value = existing.title;
+      subtitleInput.value = existing.subtitle ?? '';
+      authorsInput.value = existing.authors.join(', ');
+
+      if (existing.collection) {
+        const volInput = document.getElementById('volume-input') as HTMLInputElement;
+        volInput.value = String(existing.collection.volume);
+        volumeRow.classList.remove('hidden');
+      }
+
+      const existingCoverUrl = getEffectiveCoverUrl(existing);
+      if (existingCoverUrl) {
+        const img = document.createElement('img');
+        img.src = existingCoverUrl;
+        img.alt = '';
+        img.className = 'h-full w-full object-cover';
+        coverPreview.appendChild(img);
+      }
+
+      bookInfo.classList.remove('hidden');
+      extraFields.classList.remove('hidden');
+      showFormActions();
+      await refreshCollectionSelect(existing.collection?.name ?? null);
+    }
+  }
+
+  async function refreshCollectionSelect(preselect: string | null = null): Promise<void> {
+    const names = await getCollectionNames();
+    if (names.length === 0) {
+      collectionExistingWrapper.classList.add('hidden');
+      return;
+    }
+    collectionExistingWrapper.classList.remove('hidden');
+    collectionSelect.innerHTML =
+      '<option value="">— Sélectionner —</option>' +
+      names.map((n) => `<option value="${n}">${n}</option>`).join('');
+    if (preselect) {
+      collectionSelect.value = preselect;
+      collectionInput.value = '';
+    }
+  }
+
+  let pendingCoverBlob: Blob | null = null;
+  let pendingCoverUrl: string | null = null;
+  let isManual = false;
+
+  // ─── Helpers ───────────────────────────────────────────────────────────────────
+
+  function setStatus(msg: string, type: 'neutral' | 'error' | 'success' = 'neutral') {
+    eanStatus.textContent = msg;
+    eanStatus.className = `mt-2 text-xs ${type === 'error' ? 'text-red-600' : type === 'success' ? 'text-green-600' : 'text-neutral-400'}`;
+  }
+
+  function hideAllStates() {
+    [bookInfo, extraFields, stateOwned, stateSuccess].forEach((el) => el.classList.add('hidden'));
+    hideFormActions();
+  }
+
+  function resetForm() {
+    eanInput.value = '';
+    titleInput.value = '';
+    titleInput.readOnly = false;
+    subtitleInput.value = '';
+    subtitleInput.readOnly = false;
+    authorsInput.value = '';
+    authorsInput.readOnly = false;
+    coverPreview.innerHTML = '';
+    collectionInput.value = '';
+    collectionSelect.value = '';
+    volumeRow.classList.add('hidden');
+    pendingCoverBlob = null;
+    pendingCoverUrl = null;
+    isManual = false;
+    setStatus('');
+    hideAllStates();
+  }
+
+  // ─── Scan ──────────────────────────────────────────────────────────────────────
+
+  scanBtn.addEventListener('click', () => {
+    document.dispatchEvent(new CustomEvent('open-scanner'));
+  });
+
+  document.addEventListener('ean-detected', (e) => {
+    const ean = (e as CustomEvent<{ ean: string }>).detail.ean;
+    eanInput.value = ean;
+    triggerLookup(ean);
+  });
+
+  // ─── Saisie manuelle ───────────────────────────────────────────────────────────
+
+  let debounceTimer: ReturnType<typeof setTimeout>;
+  eanInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    const val = eanInput.value.trim();
+    if (val.length === 13 && /^\d{13}$/.test(val)) {
+      debounceTimer = setTimeout(() => triggerLookup(val), 400);
+    } else {
+      hideAllStates();
+      setStatus('');
+    }
+  });
+
+  // ─── Lookup ────────────────────────────────────────────────────────────────────
+
+  async function triggerLookup(ean: string) {
+    hideAllStates();
+    setStatus('Recherche en cours...');
+
+    // 1. Vérif doublon
+    const existing = await getBookByEan(ean);
+    if (existing) {
+      setStatus('');
+      stateOwned.classList.remove('hidden');
+      return;
+    }
+
+    // 2. Open Library
+    const result = await lookupByEan(ean);
+
+    if (!result || !result.title) {
+      setStatus('Introuvable dans Open Library — renseignez les informations manuellement.', 'neutral');
+      isManual = true;
+      titleInput.readOnly = false;
+      subtitleInput.readOnly = false;
+      authorsInput.readOnly = false;
+      bookInfo.classList.remove('hidden');
+      extraFields.classList.remove('hidden');
+      showFormActions();
+      refreshCollectionSelect();
+      return;
+    }
+
+    // 3. Remplissage automatique (avec traduction si japonais détecté)
+    setStatus('Livre trouvé !', 'success');
+    isManual = false;
+
+    const [title, subtitle, ...translatedAuthors] = await Promise.all([
+      translateToFrench(result.title),
+      result.subtitle ? translateToFrench(result.subtitle) : Promise.resolve(''),
+      ...result.authors.map((a) => translateToFrench(a)),
+    ]);
+
+    titleInput.value = title;
+    titleInput.readOnly = true;
+    subtitleInput.value = subtitle;
+    subtitleInput.readOnly = result.subtitle !== null;
+    authorsInput.value = translatedAuthors.join(', ');
+    authorsInput.readOnly = true;
+
+    const detectedVolume = extractVolume(result.title);
+    if (detectedVolume !== null) {
+      (document.getElementById('volume-input') as HTMLInputElement).value = String(detectedVolume);
+      volumeRow.classList.remove('hidden');
+    }
+    pendingCoverUrl = result.coverUrl;
+
+    if (result.coverUrl) {
+      pendingCoverBlob = await fetchCoverBlob(result.coverUrl);
+      if (pendingCoverBlob) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(pendingCoverBlob);
+        img.alt = '';
+        img.className = 'h-full w-full object-cover';
+        coverPreview.appendChild(img);
+      }
+    }
+
+    bookInfo.classList.remove('hidden');
+    extraFields.classList.remove('hidden');
+    showFormActions();
+    refreshCollectionSelect();
+  }
+
+  // ─── Collection / tome ─────────────────────────────────────────────────────────
+
+  function activeCollection(): string {
+    return collectionSelect.value || collectionInput.value.trim();
+  }
+
+  collectionInput.addEventListener('input', () => {
+    if (collectionInput.value.trim()) collectionSelect.value = '';
+    volumeRow.classList.toggle('hidden', activeCollection() === '');
+  });
+
+  collectionSelect.addEventListener('change', () => {
+    if (collectionSelect.value) collectionInput.value = '';
+    volumeRow.classList.toggle('hidden', activeCollection() === '');
+  });
+
+  // ─── Soumission ────────────────────────────────────────────────────────────────
+
+  submitBtn.addEventListener('click', async () => {
+    const ean = eanInput.value.trim();
+    const title = titleInput.value.trim();
+
+    if (!ean || !title) {
+      setStatus('Veuillez renseigner l\'EAN et le titre.', 'error');
+      return;
+    }
+
+    const authors = authorsInput.value.split(',').map((a) => a.trim()).filter(Boolean);
+    const collection = activeCollection() || null;
+    const volume = collection
+      ? parseInt((document.getElementById('volume-input') as HTMLInputElement).value, 10) || null
+      : null;
+
+    const subtitle = subtitleInput.value.trim() || null;
+
+    if (editId) {
+      const existing = await getBookById(editId);
+      if (!existing) { setStatus('Livre introuvable.', 'error'); return; }
+      const collectionSlug = collection
+        ? collection.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+        : null;
+      const updatedBook: Book = {
+        ...existing,
+        title,
+        subtitle,
+        authors,
+        collection: collection && collectionSlug && volume !== null
+          ? { name: collection, slug: collectionSlug, volume }
+          : null,
+      };
+      await saveBook(updatedBook);
+      window.location.href = '/';
+      return;
+    }
+
+    // Upload couverture avant de sauvegarder
+    const book = buildBook({ title, subtitle, authors, coverUrl: pendingCoverUrl, ean }, collection, volume);
+    if (pendingCoverBlob) {
+      book.cover = await uploadCover(book.id, pendingCoverBlob);
+    }
+    await saveBook(book);
+
+    hideAllStates();
+    stateSuccess.classList.remove('hidden');
+    setStatus('');
+  });
+
+  // ─── Succès → ajouter un autre ─────────────────────────────────────────────────
+
+  addAnotherBtn.addEventListener('click', resetForm);
+</script>

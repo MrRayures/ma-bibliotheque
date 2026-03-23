@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SearchBar from '../components/SearchBar.astro';
-import libraryData from '../../data/library.json';
 ---
 
 <BaseLayout title="Livres — Ma Bibliothèque">
@@ -19,45 +18,71 @@ import libraryData from '../../data/library.json';
     >
     </ul>
     <p id="books-loading" class="mt-8 text-sm text-neutral-400">Chargement...</p>
-    <p id="books-empty" class="mt-8 text-sm text-neutral-400" hidden>
-      Aucun livre pour l'instant. Ajoutez vos premiers livres avec le bouton <strong class="font-medium text-neutral-700">+</strong>.
-    </p>
+    <div id="books-empty" class="mt-16 flex flex-col items-center gap-4 text-center" hidden>
+      <p class="text-sm text-neutral-400">Aucun livre pour l'instant.</p>
+      <a
+        href="/ajouter"
+        class="inline-flex items-center gap-2 rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Ajoutez votre premier livre
+      </a>
+    </div>
+
   </div>
 </BaseLayout>
 
-<script define:vars={{ seedData: libraryData }}>
-  import { seedFromJson, getAllBooks, getCoverUrl } from '../utils/db';
+<script>
+  import { getAllBooks, getEffectiveCoverUrl, deleteBook } from '../utils/api';
+  import { isLoggedIn } from '../utils/auth';
   import { createBookListItem } from '../utils/render';
 
   async function init() {
-    await seedFromJson(seedData.books);
-
-    const books = (await getAllBooks()).filter((b) => b.status === 'owned');
+    const books = await getAllBooks();
     const grid = document.getElementById('book-grid');
     const loading = document.getElementById('books-loading');
     const empty = document.getElementById('books-empty');
     const count = document.getElementById('book-count');
+    const loggedIn = isLoggedIn();
 
     if (!grid) return;
 
     if (books.length === 0) {
       if (loading) loading.hidden = true;
-      if (empty) empty.hidden = false;
+      if (empty) {
+        empty.hidden = false;
+        const addFirstLink = empty.querySelector('a[href="/ajouter"]') as HTMLElement | null;
+        if (addFirstLink) addFirstLink.hidden = !loggedIn;
+      }
       return;
     }
 
     const fragment = document.createDocumentFragment();
-
     for (const book of books) {
-      const coverUrl = await getCoverUrl(book.id);
-      const li = createBookListItem(book, coverUrl, `${book.title} ${book.authors.join(' ')}`);
+      const coverUrl = getEffectiveCoverUrl(book);
+      const li = createBookListItem(book, coverUrl, `${book.title} ${book.authors.join(' ')}`, loggedIn);
       fragment.appendChild(li);
     }
 
     grid.appendChild(fragment);
-
     if (loading) loading.hidden = true;
     if (count) count.textContent = `${books.length} livre${books.length > 1 ? 's' : ''}`;
+
+    grid.addEventListener('click', async (e) => {
+      const btn = (e.target as Element).closest('[data-delete-id]') as HTMLElement | null;
+      if (!btn) return;
+      if (!confirm('Supprimer ce livre ?')) return;
+      const id = btn.dataset.deleteId!;
+      await deleteBook(id);
+      btn.closest('li')?.remove();
+      const remaining = grid.querySelectorAll('li').length;
+      if (count) count.textContent = remaining > 0 ? `${remaining} livre${remaining > 1 ? 's' : ''}` : '';
+      if (remaining === 0) {
+        if (empty) empty.hidden = false;
+      }
+    });
   }
 
   init();

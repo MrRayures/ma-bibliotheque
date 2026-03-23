@@ -51,7 +51,7 @@
 
   function closeScanner() {
     dialog.close();
-    reader.reset();
+    try { reader.reset(); } catch { /* ignore — peut échouer sur Android si déjà arrêté */ }
     scanning = false;
     statusEl.textContent = 'Pointez la caméra vers le code-barres';
   }
@@ -72,14 +72,17 @@
 
     try {
       await reader.decodeFromVideoDevice(undefined, video, (result, err) => {
+        if (!scanning) return; // callbacks résiduels post-reset
         if (result) {
           const code = result.getText();
           if (!isBookEan(code)) {
             statusEl.textContent = 'Code non reconnu — pointez vers un code-barres de livre (ISBN)';
             return;
           }
-          closeScanner();
+          scanning = false; // bloquer les fires suivants avant closeScanner
           document.dispatchEvent(new CustomEvent('ean-detected', { detail: { ean: code } }));
+          closeScanner();
+          return;
         }
         if (err && !err.message?.includes('No MultiFormat Readers')) {
           statusEl.textContent = 'Erreur caméra. Réessayez.';
