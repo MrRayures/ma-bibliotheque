@@ -3,64 +3,47 @@ import type { Book } from '../types/library';
 export function createBookCard(book: Book, coverUrl: string | null): HTMLElement {
   const article = document.createElement('article');
   article.className =
-    'flex flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white transition-shadow hover:shadow-md';
-
-  const coverWrapper = document.createElement('div');
-  coverWrapper.className = 'relative aspect-[2/3] bg-neutral-100';
+    'relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-neutral-800 transition-transform hover:scale-[1.02] hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900';
+  article.setAttribute('aria-label', book.title);
+  article.tabIndex = 0;
 
   if (coverUrl) {
     const img = document.createElement('img');
     img.src = coverUrl;
-    img.alt = `Couverture de ${book.title}`;
+    img.alt = '';
     img.width = 200;
-    img.height = 300;
+    img.height = 200;
     img.loading = 'lazy';
     img.className = 'h-full w-full object-cover';
-    coverWrapper.appendChild(img);
+    article.appendChild(img);
   } else {
     const placeholder = document.createElement('div');
-    placeholder.className =
-      'flex h-full w-full items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-200';
+    placeholder.className = 'flex h-full w-full items-center justify-center';
     const letter = document.createElement('span');
-    letter.className = 'text-4xl font-bold text-neutral-400';
+    letter.className = 'text-3xl font-bold text-neutral-500';
     letter.setAttribute('aria-hidden', 'true');
     letter.textContent = (book.title[0] ?? '?').toUpperCase();
     placeholder.appendChild(letter);
-    coverWrapper.appendChild(placeholder);
+    article.appendChild(placeholder);
   }
 
-  const info = document.createElement('div');
-  info.className = 'flex flex-1 flex-col gap-1 p-3';
+  const overlay = document.createElement('div');
+  overlay.className =
+    'absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-2.5 pb-2.5 pt-10';
 
-  const title = document.createElement('h2');
-  title.className = 'line-clamp-2 text-sm font-semibold leading-tight text-neutral-900';
-  title.textContent = book.title;
-
-  info.appendChild(title);
-
-  if (book.subtitle) {
-    const subtitle = document.createElement('p');
-    subtitle.className = 'line-clamp-1 text-xs text-neutral-500 italic';
-    subtitle.textContent = book.subtitle;
-    info.appendChild(subtitle);
-  }
-
-  const authors = document.createElement('p');
-  authors.className = 'text-xs text-neutral-500';
-  authors.textContent = book.authors.join(', ');
-
-  info.appendChild(authors);
+  const titleEl = document.createElement('p');
+  titleEl.className = 'line-clamp-2 text-xs font-semibold leading-snug text-white';
+  titleEl.textContent = book.title;
+  overlay.appendChild(titleEl);
 
   if (book.collection) {
-    const vol = document.createElement('p');
-    vol.className = 'text-xs text-neutral-400';
-    vol.textContent = `Vol.\u00a0${book.collection.volume}`;
-    info.appendChild(vol);
+    const meta = document.createElement('p');
+    meta.className = 'mt-0.5 truncate text-[10px] leading-tight text-white/70';
+    meta.textContent = `${book.collection.name}\u00a0· T.\u00a0${book.collection.volume}`;
+    overlay.appendChild(meta);
   }
 
-  article.appendChild(coverWrapper);
-  article.appendChild(info);
-
+  article.appendChild(overlay);
   return article;
 }
 
@@ -72,35 +55,24 @@ export function createBookListItem(
 ): HTMLLIElement {
   const li = document.createElement('li');
   li.dataset.search = searchValue;
+  li.dataset.bookId = book.id;
 
-  const wrapper = document.createElement('div');
-  wrapper.className = 'relative';
-  wrapper.appendChild(createBookCard(book, coverUrl));
+  const card = createBookCard(book, coverUrl);
 
-  if (isLoggedIn) {
-    const actions = document.createElement('div');
-    actions.className = 'absolute top-1.5 right-1.5 flex gap-1';
+  const openDialog = () => {
+    document.dispatchEvent(
+      new CustomEvent('open-book-dialog', { detail: { book, coverUrl, isLoggedIn } }),
+    );
+  };
 
-    const editLink = document.createElement('a');
-    editLink.href = `/ajouter?id=${book.id}`;
-    editLink.className =
-      'flex h-6 w-6 items-center justify-center rounded bg-white/90 text-neutral-500 shadow-sm hover:bg-white hover:text-neutral-900';
-    editLink.setAttribute('aria-label', `Modifier ${book.title}`);
-    editLink.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+  card.addEventListener('click', openDialog);
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openDialog();
+    }
+  });
 
-    const deleteBtn = document.createElement('button');
-    deleteBtn.type = 'button';
-    deleteBtn.dataset.deleteId = book.id;
-    deleteBtn.className =
-      'flex h-6 w-6 items-center justify-center rounded bg-white/90 text-neutral-500 shadow-sm hover:bg-red-50 hover:text-red-600';
-    deleteBtn.setAttribute('aria-label', `Supprimer ${book.title}`);
-    deleteBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`;
-
-    actions.appendChild(editLink);
-    actions.appendChild(deleteBtn);
-    wrapper.appendChild(actions);
-  }
-
-  li.appendChild(wrapper);
+  li.appendChild(card);
   return li;
 }

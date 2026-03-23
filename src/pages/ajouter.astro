@@ -9,6 +9,11 @@ import BarcodeScanner from '../components/BarcodeScanner.astro';
   <div class="mx-auto max-w-lg px-4 pb-28 pt-8">
     <h1 class="mb-8 text-2xl font-bold text-neutral-900">Ajouter un livre</h1>
 
+    <!-- État : déjà possédé -->
+    <div id="state-owned" class="mb-6 hidden rounded-lg border border-amber-300 bg-amber-50 px-4 py-3" role="alert">
+      <p class="text-sm font-medium text-amber-800">⚠ Ce livre est déjà dans ta bibliothèque.</p>
+    </div>
+
     <!-- Champ EAN -->
     <div class="mb-6">
       <label for="ean-input" class="mb-1 block text-sm font-medium text-neutral-700">
@@ -28,7 +33,7 @@ import BarcodeScanner from '../components/BarcodeScanner.astro';
         <button
           type="button"
           id="scan-btn"
-          class="flex items-center gap-2 rounded-lg border border-neutral-200 px-4 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+          class="flex items-center gap-2 rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
@@ -41,7 +46,7 @@ import BarcodeScanner from '../components/BarcodeScanner.astro';
     </div>
 
     <!-- Infos livre -->
-    <div id="book-info" class="mb-6 hidden">
+    <div id="book-info" class="mb-6">
       <div class="flex gap-4">
         <div
           id="cover-preview"
@@ -88,7 +93,7 @@ import BarcodeScanner from '../components/BarcodeScanner.astro';
     </div>
 
     <!-- Champs supplémentaires -->
-    <div id="extra-fields" class="hidden">
+    <div id="extra-fields">
       <div class="mb-4">
         <p class="mb-2 text-sm font-medium text-neutral-700">
           Collection <span class="font-normal text-neutral-400">(optionnel)</span>
@@ -146,11 +151,6 @@ import BarcodeScanner from '../components/BarcodeScanner.astro';
 
     </div>
 
-    <!-- État : déjà possédé -->
-    <div id="state-owned" class="hidden rounded-lg border border-neutral-200 bg-neutral-50 p-4">
-      <p class="text-sm text-neutral-700">Ce livre est déjà dans ta bibliothèque.</p>
-    </div>
-
     <!-- État : succès -->
     <div id="state-success" class="hidden rounded-lg border border-green-200 bg-green-50 p-4">
       <p class="mb-3 text-sm text-green-700">Livre ajouté avec succès !</p>
@@ -200,7 +200,7 @@ import BarcodeScanner from '../components/BarcodeScanner.astro';
   import type { Book } from '../types/library';
 import { getBookByEan, getBookById, getCollectionNames, getEffectiveCoverUrl, saveBook, uploadCover } from '../utils/api';
 import { isLoggedIn } from '../utils/auth';
-import { buildBook, extractVolume, fetchCoverBlob, lookupByEan } from '../utils/openLibrary';
+import { buildBook, extractVolume, lookupByEan } from '../utils/openLibrary';
 import { translateToFrench } from '../utils/translate';
 
   // ─── Guard auth ────────────────────────────────────────────────────────────────
@@ -275,11 +275,12 @@ import { translateToFrench } from '../utils/translate';
         coverPreview.appendChild(img);
       }
 
-      bookInfo.classList.remove('hidden');
-      extraFields.classList.remove('hidden');
       showFormActions();
       await refreshCollectionSelect(existing.collection?.name ?? null);
     }
+  } else {
+    showFormActions();
+    refreshCollectionSelect();
   }
 
   async function refreshCollectionSelect(preselect: string | null = null): Promise<void> {
@@ -298,23 +299,36 @@ import { translateToFrench } from '../utils/translate';
     }
   }
 
-  let pendingCoverBlob: Blob | null = null;
   let pendingCoverUrl: string | null = null;
   let isManual = false;
 
   // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-  function setStatus(msg: string, type: 'neutral' | 'error' | 'success' = 'neutral') {
+  function setStatus(msg: string, type: 'neutral' | 'error' | 'success' = 'neutral'): void {
     eanStatus.textContent = msg;
-    eanStatus.className = `mt-2 text-xs ${type === 'error' ? 'text-red-600' : type === 'success' ? 'text-green-600' : 'text-neutral-400'}`;
+    if (type === 'success') {
+      eanStatus.className = 'mt-2 block rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm font-medium text-green-800';
+    } else if (type === 'error') {
+      eanStatus.className = 'mt-2 text-xs text-red-600';
+    } else {
+      eanStatus.className = 'mt-2 text-xs text-neutral-400';
+    }
   }
 
-  function hideAllStates() {
-    [bookInfo, extraFields, stateOwned, stateSuccess].forEach((el) => el.classList.add('hidden'));
+  function hideAllStates(): void {
+    stateOwned.classList.add('hidden');
+    stateSuccess.classList.add('hidden');
+  }
+
+  function showSuccessState(): void {
+    bookInfo.classList.add('hidden');
+    extraFields.classList.add('hidden');
     hideFormActions();
+    stateOwned.classList.add('hidden');
+    stateSuccess.classList.remove('hidden');
   }
 
-  function resetForm() {
+  function resetForm(): void {
     eanInput.value = '';
     titleInput.value = '';
     titleInput.readOnly = false;
@@ -326,11 +340,13 @@ import { translateToFrench } from '../utils/translate';
     collectionInput.value = '';
     collectionSelect.value = '';
     volumeRow.classList.add('hidden');
-    pendingCoverBlob = null;
     pendingCoverUrl = null;
     isManual = false;
     setStatus('');
+    bookInfo.classList.remove('hidden');
+    extraFields.classList.remove('hidden');
     hideAllStates();
+    showFormActions();
   }
 
   // ─── Scan ──────────────────────────────────────────────────────────────────────
@@ -362,6 +378,18 @@ import { translateToFrench } from '../utils/translate';
   // ─── Lookup ────────────────────────────────────────────────────────────────────
 
   async function triggerLookup(ean: string) {
+    // Réinitialiser les champs du livre précédent
+    coverPreview.innerHTML = '';
+    pendingCoverUrl = null;
+    titleInput.value = '';
+    titleInput.readOnly = false;
+    subtitleInput.value = '';
+    subtitleInput.readOnly = false;
+    authorsInput.value = '';
+    authorsInput.readOnly = false;
+    (document.getElementById('volume-input') as HTMLInputElement).value = '';
+    volumeRow.classList.add('hidden');
+
     hideAllStates();
     setStatus('Recherche en cours...');
 
@@ -382,10 +410,6 @@ import { translateToFrench } from '../utils/translate';
       titleInput.readOnly = false;
       subtitleInput.readOnly = false;
       authorsInput.readOnly = false;
-      bookInfo.classList.remove('hidden');
-      extraFields.classList.remove('hidden');
-      showFormActions();
-      refreshCollectionSelect();
       return;
     }
 
@@ -414,19 +438,13 @@ import { translateToFrench } from '../utils/translate';
     pendingCoverUrl = result.coverUrl;
 
     if (result.coverUrl) {
-      pendingCoverBlob = await fetchCoverBlob(result.coverUrl);
-      if (pendingCoverBlob) {
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(pendingCoverBlob);
-        img.alt = '';
-        img.className = 'h-full w-full object-cover';
-        coverPreview.appendChild(img);
-      }
+      const img = document.createElement('img');
+      img.src = result.coverUrl;
+      img.alt = '';
+      img.className = 'h-full w-full object-cover';
+      coverPreview.appendChild(img);
     }
 
-    bookInfo.classList.remove('hidden');
-    extraFields.classList.remove('hidden');
-    showFormActions();
     refreshCollectionSelect();
   }
 
@@ -448,6 +466,15 @@ import { translateToFrench } from '../utils/translate';
 
   // ─── Soumission ────────────────────────────────────────────────────────────────
 
+  const submitBtnText = submitBtn.textContent ?? '';
+
+  function setSubmitLoading(loading: boolean): void {
+    (submitBtn as HTMLButtonElement).disabled = loading;
+    submitBtn.innerHTML = loading
+      ? `<svg class="animate-spin mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Enregistrement…`
+      : submitBtnText;
+  }
+
   submitBtn.addEventListener('click', async () => {
     const ean = eanInput.value.trim();
     const title = titleInput.value.trim();
@@ -460,41 +487,44 @@ import { translateToFrench } from '../utils/translate';
     const authors = authorsInput.value.split(',').map((a) => a.trim()).filter(Boolean);
     const collection = activeCollection() || null;
     const volume = collection
-      ? parseInt((document.getElementById('volume-input') as HTMLInputElement).value, 10) || null
+      ? parseInt((document.getElementById('volume-input') as HTMLInputElement).value, 10) || 1
       : null;
 
     const subtitle = subtitleInput.value.trim() || null;
 
-    if (editId) {
-      const existing = await getBookById(editId);
-      if (!existing) { setStatus('Livre introuvable.', 'error'); return; }
-      const collectionSlug = collection
-        ? collection.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-        : null;
-      const updatedBook: Book = {
-        ...existing,
-        title,
-        subtitle,
-        authors,
-        collection: collection && collectionSlug && volume !== null
-          ? { name: collection, slug: collectionSlug, volume }
-          : null,
-      };
-      await saveBook(updatedBook);
-      window.location.href = '/';
-      return;
-    }
+    setSubmitLoading(true);
+    try {
+      if (editId) {
+        const existing = await getBookById(editId);
+        if (!existing) { setStatus('Livre introuvable.', 'error'); return; }
+        const collectionSlug = collection
+          ? collection.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+          : null;
+        const updatedBook: Book = {
+          ...existing,
+          title,
+          subtitle,
+          authors,
+          collection: collection && collectionSlug && volume !== null
+            ? { name: collection, slug: collectionSlug, volume }
+            : null,
+        };
+        await saveBook(updatedBook);
+        window.location.href = '/';
+        return;
+      }
 
-    // Upload couverture avant de sauvegarder
-    const book = buildBook({ title, subtitle, authors, coverUrl: pendingCoverUrl, ean }, collection, volume);
-    if (pendingCoverBlob) {
-      book.cover = await uploadCover(book.id, pendingCoverBlob);
+      // Upload couverture avant de sauvegarder (PHP télécharge depuis Open Library)
+      const book = buildBook({ title, subtitle, authors, coverUrl: pendingCoverUrl, ean }, collection, volume);
+      if (pendingCoverUrl) {
+        book.cover = await uploadCover(book.id, pendingCoverUrl);
+      }
+      await saveBook(book);
+      setStatus('');
+      showSuccessState();
+    } finally {
+      setSubmitLoading(false);
     }
-    await saveBook(book);
-
-    hideAllStates();
-    stateSuccess.classList.remove('hidden');
-    setStatus('');
   });
 
   // ─── Succès → ajouter un autre ─────────────────────────────────────────────────

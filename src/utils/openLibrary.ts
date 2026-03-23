@@ -44,16 +44,6 @@ export async function lookupByEan(ean: string): Promise<LookupResult | null> {
   return result;
 }
 
-export async function fetchCoverBlob(coverUrl: string): Promise<Blob | null> {
-  try {
-    const response = await fetch(coverUrl);
-    if (!response.ok) return null;
-    return await response.blob();
-  } catch {
-    return null;
-  }
-}
-
 export function extractVolume(title: string): number | null {
   const patterns = [
     /\btome\s*(\d+)/i,

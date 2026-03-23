@@ -27,7 +27,6 @@ if ($isWrite) {
 $cover_id = $_GET['cover'] ?? null;
 
 if ($cover_id !== null) {
-    // Valider le format UUID
     if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $cover_id)) {
         http_response_code(400);
         echo json_encode(['error' => 'ID invalide']);
@@ -42,19 +41,43 @@ if ($cover_id !== null) {
 
     if (!is_dir(COVERS_DIR)) mkdir(COVERS_DIR, 0755, true);
 
-    $mime = strtolower(explode(';', $_SERVER['CONTENT_TYPE'] ?? 'image/jpeg')[0]);
-    $ext = match(trim($mime)) {
-        'image/png'  => 'png',
-        'image/webp' => 'webp',
-        default      => 'jpg',
-    };
-
-    // Supprimer l'ancienne couverture si extension différente
     foreach (glob(COVERS_DIR . '/' . $cover_id . '.*') ?: [] as $old) {
         unlink($old);
     }
 
-    $body = file_get_contents('php://input');
+    $from_url = $_GET['from'] ?? null;
+
+    if ($from_url !== null) {
+        // ─── Téléchargement server-side depuis Open Library ───────────────────
+        $parsed = parse_url($from_url);
+        $host   = $parsed['host'] ?? '';
+
+        if (!preg_match('/(?:^|\.)openlibrary\.org$/', $host)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'URL non autorisée']);
+            exit;
+        }
+
+        $body = coverFetch($from_url);
+
+        if ($body === false || $body === '') {
+            http_response_code(502);
+            echo json_encode(['error' => 'Téléchargement impossible']);
+            exit;
+        }
+
+        $ext = 'jpg';
+    } else {
+        // ─── Upload direct (blob dans le body) ────────────────────────────────
+        $mime = strtolower(explode(';', $_SERVER['CONTENT_TYPE'] ?? 'image/jpeg')[0]);
+        $ext  = match(trim($mime)) {
+            'image/png'  => 'png',
+            'image/webp' => 'webp',
+            default      => 'jpg',
+        };
+        $body = file_get_contents('php://input');
+    }
+
     $path = COVERS_DIR . '/' . $cover_id . '.' . $ext;
 
     if (file_put_contents($path, $body) === false) {
@@ -96,3 +119,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 http_response_code(405);
 echo json_encode(['error' => 'Méthode non autorisée']);
+
+// ─── Téléchargement d'une image externe (curl ou file_get_contents) ───────────
+function coverFetch(string $url): string|false
+{
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_USERAGENT      => 'ma-bibliotheque/1.0',
+        ]);
+        $data     = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        return ($data !== false && $httpCode < 400) ? $data : false;
+    }
+
+    $ctx = stream_context_create([
+        'http' => [
+            'timeout'         => 10,
+            'follow_location' => 1,
+            'user_agent'      => 'ma-bibliotheque/1.0',
+        ],
+    ]);
+    return @file_get_contents($url, false, $ctx);
+}

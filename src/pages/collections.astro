@@ -14,18 +14,78 @@ import SearchBar from '../components/SearchBar.astro';
     </div>
     <SearchBar placeholder="Rechercher une collection..." />
     <div id="collections-container" class="mt-8 flex flex-col gap-10"></div>
-    <p id="collections-loading" class="mt-8 text-sm text-neutral-400">Chargement...</p>
+    <div id="collections-loading" class="mt-8 flex flex-col gap-10" aria-label="Chargement en cours" aria-busy="true">
+      {Array.from({ length: 2 }).map(() => (
+        <div>
+          <div class="mb-4">
+            <div class="mb-2 h-5 w-44 animate-pulse rounded bg-neutral-200"></div>
+            <div class="h-3 w-16 animate-pulse rounded bg-neutral-200"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {Array.from({ length: 6 }).map(() => (
+              <div class="aspect-square animate-pulse rounded-lg bg-neutral-200"></div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
     <p id="collections-empty" class="mt-8 text-sm text-neutral-400" hidden>
       Aucune collection pour l'instant.
     </p>
   </div>
+
+  <!-- Dialog renommer -->
+  <dialog
+    id="rename-dialog"
+    class="w-full max-w-sm rounded-xl border border-neutral-200 bg-white p-0 shadow-xl backdrop:bg-black/50"
+    aria-labelledby="rename-title"
+  >
+    <div class="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+      <h2 id="rename-title" class="text-sm font-semibold text-neutral-900">Renommer la collection</h2>
+      <button
+        id="rename-close"
+        type="button"
+        aria-label="Fermer"
+        class="rounded p-1 text-neutral-400 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="flex flex-col gap-3 p-5">
+      <label for="rename-input" class="text-sm text-neutral-700">Nouveau nom</label>
+      <input
+        type="text"
+        id="rename-input"
+        autocomplete="off"
+        class="rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+      />
+      <div class="flex gap-2">
+        <button
+          id="rename-cancel"
+          type="button"
+          class="flex-1 rounded-lg border border-neutral-200 px-4 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+        >
+          Annuler
+        </button>
+        <button
+          id="rename-confirm"
+          type="button"
+          class="flex-1 rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+        >
+          Renommer
+        </button>
+      </div>
+    </div>
+  </dialog>
 </BaseLayout>
 
 <script>
   import type { Book } from '../types/library';
-import { deleteBook, getAllBooks, getEffectiveCoverUrl } from '../utils/api';
-import { isLoggedIn } from '../utils/auth';
-import { createBookListItem } from '../utils/render';
+  import { getAllBooks, getEffectiveCoverUrl, renameCollection } from '../utils/api';
+  import { isLoggedIn } from '../utils/auth';
+  import { createBookListItem } from '../utils/render';
 
   function groupByCollection(books: Book[]): Map<string, Book[]> {
     const map = new Map<string, Book[]>();
@@ -41,25 +101,87 @@ import { createBookListItem } from '../utils/render';
     return map;
   }
 
-  function createCollectionSection(name: string, books: Book[]): HTMLElement {
+  function createCollectionSection(name: string, slug: string, books: Book[], loggedIn: boolean): HTMLElement {
     const section = document.createElement('section');
     section.dataset.collection = '';
+    section.dataset.collectionSlug = slug;
     section.dataset.search = name.toLowerCase();
 
     const header = document.createElement('div');
     header.className = 'mb-4';
 
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2';
+
     const heading = document.createElement('h2');
     heading.className = 'text-lg font-bold text-neutral-900';
     heading.textContent = name;
+    row.appendChild(heading);
+
+    if (loggedIn) {
+      const renameBtn = document.createElement('button');
+      renameBtn.type = 'button';
+      renameBtn.setAttribute('aria-label', `Renommer ${name}`);
+      renameBtn.className = 'flex h-6 w-6 items-center justify-center rounded text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700';
+      renameBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+      renameBtn.addEventListener('click', () => openRenameDialog(section, heading));
+      row.appendChild(renameBtn);
+    }
+
+    header.appendChild(row);
+
     const subtitle = document.createElement('p');
-    subtitle.className = 'text-sm text-neutral-500';
+    subtitle.className = 'mt-0.5 text-sm text-neutral-500';
     subtitle.textContent = `${books.length} tome${books.length > 1 ? 's' : ''}`;
-    header.appendChild(heading);
     header.appendChild(subtitle);
+
     section.appendChild(header);
     return section;
   }
+
+  // ─── Dialog renommer ───────────────────────────────────────────────────────────
+
+  const renameDialog = document.getElementById('rename-dialog') as HTMLDialogElement;
+  const renameInput  = document.getElementById('rename-input') as HTMLInputElement;
+
+  let activeSection: HTMLElement | null = null;
+  let activeHeading: HTMLElement | null = null;
+
+  function openRenameDialog(section: HTMLElement, heading: HTMLElement): void {
+    activeSection = section;
+    activeHeading = heading;
+    renameInput.value = heading.textContent ?? '';
+    renameDialog.showModal();
+    renameInput.select();
+  }
+
+  function closeRenameDialog(): void {
+    renameDialog.close();
+    activeSection = null;
+    activeHeading = null;
+  }
+
+  document.getElementById('rename-close')?.addEventListener('click', closeRenameDialog);
+  document.getElementById('rename-cancel')?.addEventListener('click', closeRenameDialog);
+  renameDialog.addEventListener('click', (e) => { if (e.target === renameDialog) closeRenameDialog(); });
+
+  renameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('rename-confirm')?.click();
+    if (e.key === 'Escape') closeRenameDialog();
+  });
+
+  document.getElementById('rename-confirm')?.addEventListener('click', async () => {
+    if (!activeSection || !activeHeading) return;
+    const newName = renameInput.value.trim();
+    if (!newName || newName === activeHeading.textContent) { closeRenameDialog(); return; }
+
+    const oldSlug = activeSection.dataset.collectionSlug!;
+    await renameCollection(oldSlug, newName);
+    closeRenameDialog();
+    window.location.reload();
+  });
+
+  // ─── Init ──────────────────────────────────────────────────────────────────────
 
   async function init() {
     const books = await getAllBooks();
@@ -78,9 +200,9 @@ import { createBookListItem } from '../utils/render';
       return;
     }
 
-    for (const [, collectionBooks] of collections) {
+    for (const [slug, collectionBooks] of collections) {
       const name = collectionBooks[0]?.collection?.name ?? '';
-      const section = createCollectionSection(name, collectionBooks);
+      const section = createCollectionSection(name, slug, collectionBooks, loggedIn);
 
       const grid = document.createElement('ul');
       grid.className = 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6';
@@ -89,6 +211,7 @@ import { createBookListItem } from '../utils/render';
       for (const book of collectionBooks) {
         const coverUrl = getEffectiveCoverUrl(book);
         const li = createBookListItem(book, coverUrl, book.title.toLowerCase(), loggedIn);
+        li.removeAttribute('data-search'); // le filtre s'applique au niveau section, pas livre
         grid.appendChild(li);
       }
 
@@ -96,14 +219,9 @@ import { createBookListItem } from '../utils/render';
       container.appendChild(section);
     }
 
-    // Handler suppression (boutons présents uniquement si loggedIn)
-    container.addEventListener('click', async (e) => {
-      const btn = (e.target as Element).closest('[data-delete-id]') as HTMLElement | null;
-      if (!btn) return;
-      if (!confirm('Supprimer ce livre ?')) return;
-      const id = btn.dataset.deleteId!;
-      await deleteBook(id);
-      const li = btn.closest('li');
+    document.addEventListener('book-deleted', (e) => {
+      const { id } = (e as CustomEvent<{ id: string }>).detail;
+      const li = container.querySelector(`li[data-book-id="${id}"]`);
       const section = li?.closest('section');
       li?.remove();
       if (section && section.querySelectorAll('li').length === 0) section.remove();

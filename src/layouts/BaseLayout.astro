@@ -25,6 +25,7 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#171717" />
     <title>{title}</title>
+    <link rel="stylesheet" href="/assets/styles/dialogs.css" />
   </head>
   <body class="min-h-screen bg-neutral-50 text-neutral-900">
     <header class="sticky top-0 z-10 border-b border-neutral-200 bg-white">
@@ -115,6 +116,80 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
         <path d="M12 5v14M5 12h14"/>
       </svg>
     </a>
+
+    <!-- Dialog fiche livre -->
+    <dialog
+      id="book-dialog"
+      class="w-full max-w-lg rounded-xl border border-neutral-200 bg-white p-0 shadow-xl backdrop:bg-black/50"
+      aria-labelledby="dialog-book-title"
+    >
+      <div class="flex max-h-[85vh] flex-col overflow-hidden sm:flex-row">
+        <!-- Couverture -->
+        <div class="relative h-48 w-full shrink-0 overflow-hidden bg-neutral-100 sm:h-auto sm:w-44 sm:rounded-l-xl">
+          <img id="dialog-cover-img" src="" alt="" class="hidden h-full w-full object-cover" />
+          <div id="dialog-cover-placeholder" class="absolute inset-0 hidden items-center justify-center">
+            <span class="text-5xl font-bold text-neutral-300"></span>
+          </div>
+        </div>
+        <!-- Infos -->
+        <div class="flex flex-1 flex-col overflow-y-auto">
+          <div class="flex items-start justify-between gap-3 border-b border-neutral-100 px-5 py-4">
+            <h2 id="dialog-book-title" class="text-base font-bold leading-snug text-neutral-900"></h2>
+            <button
+              id="book-dialog-close"
+              type="button"
+              aria-label="Fermer"
+              class="shrink-0 rounded p-1 text-neutral-400 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M18 6 6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <dl class="flex flex-1 flex-col gap-3 px-5 py-4 text-sm">
+            <div id="dialog-row-subtitle" class="hidden">
+              <dd id="dialog-subtitle" class="italic text-neutral-500"></dd>
+            </div>
+            <div>
+              <dt class="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Auteur(s)</dt>
+              <dd id="dialog-authors" class="text-neutral-700"></dd>
+            </div>
+            <div id="dialog-row-collection" class="hidden">
+              <dt class="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Collection</dt>
+              <dd id="dialog-collection" class="text-neutral-700"></dd>
+            </div>
+            <div>
+              <dt class="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">EAN</dt>
+              <dd id="dialog-ean" class="font-mono text-neutral-700"></dd>
+            </div>
+            <div>
+              <dt class="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Ajouté le</dt>
+              <dd id="dialog-date" class="text-neutral-700"></dd>
+            </div>
+          </dl>
+
+          <div id="dialog-actions" class="hidden gap-2 border-t border-neutral-100 px-5 py-4 flex">
+            <a
+              id="dialog-edit"
+              href="#"
+              class="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Modifier
+            </a>
+            <button
+              id="dialog-delete"
+              type="button"
+              class="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              Supprimer
+            </button>
+          </div>
+        </div>
+      </div>
+    </dialog>
 
     <!-- Dialog Options -->
     <dialog
@@ -255,8 +330,9 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
 </html>
 
 <script>
+  import type { Book } from '../types/library';
   import { isLoggedIn, login, logout } from '../utils/auth';
-  import { exportToJson, importFromJson, clearAllBooks } from '../utils/api';
+  import { exportToJson, importFromJson, clearAllBooks, deleteBook } from '../utils/api';
 
   // ─── État auth ─────────────────────────────────────────────────────────────────
 
@@ -320,6 +396,91 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
   document.getElementById('logout-btn')?.addEventListener('click', () => {
     logout();
     window.location.reload();
+  });
+
+  // ─── Book dialog ───────────────────────────────────────────────────────────────
+
+  const bookDialog = document.getElementById('book-dialog') as HTMLDialogElement;
+  let currentBookId: string | null = null;
+
+  document.addEventListener('open-book-dialog', (e) => {
+    const { book, coverUrl, isLoggedIn: loggedIn } = (e as CustomEvent<{ book: Book; coverUrl: string | null; isLoggedIn: boolean }>).detail;
+    currentBookId = book.id;
+
+    // Couverture
+    const coverImg = document.getElementById('dialog-cover-img') as HTMLImageElement;
+    const coverPlaceholder = document.getElementById('dialog-cover-placeholder')!;
+    if (coverUrl) {
+      coverImg.src = coverUrl;
+      coverImg.alt = book.title;
+      coverImg.classList.remove('hidden');
+      coverPlaceholder.classList.add('hidden');
+    } else {
+      coverImg.classList.add('hidden');
+      coverPlaceholder.classList.remove('hidden');
+      const letter = coverPlaceholder.querySelector('span')!;
+      letter.textContent = (book.title[0] ?? '?').toUpperCase();
+    }
+
+    // Titre
+    document.getElementById('dialog-book-title')!.textContent = book.title;
+
+    // Sous-titre
+    const rowSubtitle = document.getElementById('dialog-row-subtitle')!;
+    const subtitleEl = document.getElementById('dialog-subtitle')!;
+    if (book.subtitle) {
+      subtitleEl.textContent = book.subtitle;
+      rowSubtitle.classList.remove('hidden');
+    } else {
+      rowSubtitle.classList.add('hidden');
+    }
+
+    // Auteurs
+    document.getElementById('dialog-authors')!.textContent = book.authors.join(', ') || '—';
+
+    // Collection
+    const rowCollection = document.getElementById('dialog-row-collection')!;
+    const collectionEl = document.getElementById('dialog-collection')!;
+    if (book.collection) {
+      collectionEl.textContent = `${book.collection.name}\u00a0· T.\u00a0${book.collection.volume}`;
+      rowCollection.classList.remove('hidden');
+    } else {
+      rowCollection.classList.add('hidden');
+    }
+
+    // EAN
+    document.getElementById('dialog-ean')!.textContent = book.ean || '—';
+
+    // Date
+    const dateEl = document.getElementById('dialog-date')!;
+    try {
+      dateEl.textContent = new Date(book.addedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch {
+      dateEl.textContent = book.addedAt;
+    }
+
+    // Actions (visibles si connecté)
+    const actionsEl = document.getElementById('dialog-actions')!;
+    if (loggedIn) {
+      (document.getElementById('dialog-edit') as HTMLAnchorElement).href = `/ajouter?id=${book.id}`;
+      actionsEl.classList.remove('hidden');
+    } else {
+      actionsEl.classList.add('hidden');
+    }
+
+    bookDialog.showModal();
+  });
+
+  document.getElementById('book-dialog-close')?.addEventListener('click', () => bookDialog.close());
+  bookDialog.addEventListener('click', (e) => { if (e.target === bookDialog) bookDialog.close(); });
+
+  document.getElementById('dialog-delete')?.addEventListener('click', async () => {
+    if (!currentBookId) return;
+    if (!confirm('Supprimer ce livre ?')) return;
+    await deleteBook(currentBookId);
+    bookDialog.close();
+    document.dispatchEvent(new CustomEvent('book-deleted', { detail: { id: currentBookId } }));
+    currentBookId = null;
   });
 
   // ─── Options dialog ────────────────────────────────────────────────────────────

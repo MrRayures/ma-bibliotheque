@@ -65,20 +65,34 @@ export async function clearAllBooks(): Promise<void> {
   await writeBooks([]);
 }
 
+export async function renameCollection(oldSlug: string, newName: string): Promise<void> {
+  const newSlug = newName
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+  const books = await fetchBooks();
+  await writeBooks(
+    books.map((b) =>
+      b.collection?.slug === oldSlug
+        ? { ...b, collection: { ...b.collection, name: newName, slug: newSlug } }
+        : b,
+    ),
+  );
+}
+
 export async function getCollectionNames(): Promise<string[]> {
   const books = await getAllBooks();
   const names = new Set(books.map((b) => b.collection?.name).filter(Boolean) as string[]);
   return [...names].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
 }
 
-export async function uploadCover(bookId: string, blob: Blob): Promise<string | null> {
+export async function uploadCover(bookId: string, coverUrl: string): Promise<string | null> {
   const token = getAuthToken();
   if (!token) return null;
   try {
-    const res = await fetch(`${getApiUrl()}?cover=${bookId}`, {
+    const res = await fetch(`${getApiUrl()}?cover=${bookId}&from=${encodeURIComponent(coverUrl)}`, {
       method: 'POST',
-      headers: { 'Content-Type': blob.type || 'image/jpeg', 'X-Token': token },
-      body: blob,
+      headers: { 'X-Token': token },
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { url: string };

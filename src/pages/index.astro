@@ -17,7 +17,16 @@ import SearchBar from '../components/SearchBar.astro';
       aria-label="Liste des livres"
     >
     </ul>
-    <p id="books-loading" class="mt-8 text-sm text-neutral-400">Chargement...</p>
+    <div
+      id="books-loading"
+      class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+      aria-label="Chargement en cours"
+      aria-busy="true"
+    >
+      {Array.from({ length: 10 }).map(() => (
+        <div class="aspect-square animate-pulse rounded-lg bg-neutral-200"></div>
+      ))}
+    </div>
     <div id="books-empty" class="mt-16 flex flex-col items-center gap-4 text-center" hidden>
       <p class="text-sm text-neutral-400">Aucun livre pour l'instant.</p>
       <a
@@ -35,7 +44,7 @@ import SearchBar from '../components/SearchBar.astro';
 </BaseLayout>
 
 <script>
-  import { getAllBooks, getEffectiveCoverUrl, deleteBook } from '../utils/api';
+  import { getAllBooks, getEffectiveCoverUrl } from '../utils/api';
   import { isLoggedIn } from '../utils/auth';
   import { createBookListItem } from '../utils/render';
 
@@ -70,18 +79,12 @@ import SearchBar from '../components/SearchBar.astro';
     if (loading) loading.hidden = true;
     if (count) count.textContent = `${books.length} livre${books.length > 1 ? 's' : ''}`;
 
-    grid.addEventListener('click', async (e) => {
-      const btn = (e.target as Element).closest('[data-delete-id]') as HTMLElement | null;
-      if (!btn) return;
-      if (!confirm('Supprimer ce livre ?')) return;
-      const id = btn.dataset.deleteId!;
-      await deleteBook(id);
-      btn.closest('li')?.remove();
+    document.addEventListener('book-deleted', (e) => {
+      const { id } = (e as CustomEvent<{ id: string }>).detail;
+      grid.querySelector(`li[data-book-id="${id}"]`)?.remove();
       const remaining = grid.querySelectorAll('li').length;
       if (count) count.textContent = remaining > 0 ? `${remaining} livre${remaining > 1 ? 's' : ''}` : '';
-      if (remaining === 0) {
-        if (empty) empty.hidden = false;
-      }
+      if (remaining === 0 && empty) empty.hidden = false;
     });
   }
 
