@@ -1,22 +1,23 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BarcodeScanner from '../components/BarcodeScanner.astro';
+import Button from '../components/Button.astro';
+import Icon from '../components/Icon.astro';
 ---
 
 <BaseLayout title="Ajouter un livre — Ma Bibliothèque">
   <BarcodeScanner />
 
-  <div class="mx-auto max-w-lg px-4 pb-28 pt-8">
-    <h1 class="mb-8 text-2xl font-bold text-neutral-900">Ajouter un livre</h1>
+  <div class="mx-auto max-w-lg px-4 pb-28 pt-3">
+    <h1 class="mb-4 text-2xl font-bold ">Ajouter un livre</h1>
 
-    <!-- État : déjà possédé -->
-    <div id="state-owned" class="mb-6 hidden rounded-lg border border-amber-300 bg-amber-50 px-4 py-3" role="alert">
-      <p class="text-sm font-medium text-amber-800">⚠ Ce livre est déjà dans ta bibliothèque.</p>
-    </div>
-
+    <Button class="mb-4 w-full" id="scan-btn" variant="primary" size="lg" iconPosition="left">
+      <Icon name="scan" size={16} slot="icon" />
+      Scanner
+    </Button>
     <!-- Champ EAN -->
     <div class="mb-6">
-      <label for="ean-input" class="mb-1 block text-sm font-medium text-neutral-700">
+      <label for="ean-input" class="mb-1 block text-sm font-medium ">
         EAN / ISBN
       </label>
       <div class="flex gap-2">
@@ -27,57 +28,51 @@ import BarcodeScanner from '../components/BarcodeScanner.astro';
           maxlength="13"
           placeholder="9782..."
           autocomplete="off"
-          class="flex-1 rounded-lg border border-neutral-200 px-3 py-2.5 text-sm font-mono focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-          aria-describedby="ean-status"
+          class="c-input flex-1 py-2.5 font-mono"
         />
-        <button
-          type="button"
-          id="scan-btn"
-          class="flex items-center gap-2 rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
-            <rect x="7" y="7" width="10" height="10" rx="1"/>
-          </svg>
-          Scanner
-        </button>
+        <Button id="search-btn" variant="secondary" size="md" iconPosition="left">
+          <Icon name="search" size={16} slot="icon" />
+          Rechercher
+        </Button>
       </div>
-      <p id="ean-status" class="mt-2 text-xs" aria-live="polite"></p>
     </div>
 
+    <!-- Zone d'alerte -->
+    <div id="alert-zone" class="mb-6 hidden" role="alert" aria-live="polite"></div>
+
     <!-- Infos livre -->
-    <div id="book-info" class="mb-6">
+    <div id="book-info" class="mb-6 hidden">
       <div class="flex gap-4">
         <div
           id="cover-preview"
-          class="h-28 w-20 shrink-0 overflow-hidden rounded-lg bg-neutral-100"
+          class="h-28 w-20 shrink-0 overflow-hidden rounded-lg bg-primary border-2 border-secondary"
         ></div>
         <div class="flex min-w-0 flex-1 flex-col gap-3">
           <div>
-            <label for="title-input" class="mb-1 block text-sm font-medium text-neutral-700">
-              Titre <span class="text-red-500">*</span>
+            <label for="title-input" class="mb-1 block text-sm font-medium ">
+              Titre <span class="text-alert">*</span>
             </label>
             <input
               type="text"
               id="title-input"
               name="title"
               required
-              class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 read-only:bg-neutral-50 read-only:text-neutral-600"
+              class="c-input--readonly"
             />
           </div>
           <div>
-            <label for="subtitle-input" class="mb-1 block text-sm font-medium text-neutral-700">
-              Sous-titre <span class="font-normal text-neutral-400">(optionnel)</span>
+            <label for="subtitle-input" class="mb-1 block text-sm font-medium ">
+              Sous-titre <span class="font-normal text-text-light">(optionnel)</span>
             </label>
             <input
               type="text"
               id="subtitle-input"
               name="subtitle"
-              class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 read-only:bg-neutral-50 read-only:text-neutral-600"
+              class="c-input--readonly"
             />
           </div>
           <div>
-            <label for="authors-input" class="mb-1 block text-sm font-medium text-neutral-700">
+            <label for="authors-input" class="mb-1 block text-sm font-medium ">
               Auteur(s)
             </label>
             <input
@@ -85,7 +80,7 @@ import BarcodeScanner from '../components/BarcodeScanner.astro';
               id="authors-input"
               name="authors"
               placeholder="ex : René Goscinny, Albert Uderzo"
-              class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 read-only:bg-neutral-50 read-only:text-neutral-600"
+              class="c-input--readonly"
             />
           </div>
         </div>
@@ -93,33 +88,33 @@ import BarcodeScanner from '../components/BarcodeScanner.astro';
     </div>
 
     <!-- Champs supplémentaires -->
-    <div id="extra-fields">
+    <div id="extra-fields" class="hidden">
       <div class="mb-4">
-        <p class="mb-2 text-sm font-medium text-neutral-700">
-          Collection <span class="font-normal text-neutral-400">(optionnel)</span>
+        <p class="mb-2 text-sm font-medium">
+          Collection <span class="font-normal text-text-light">(optionnel)</span>
         </p>
 
         <!-- Nouvelle collection -->
         <div class="mb-2">
           <!-- Séparateur + select collections existantes (masqués si aucune) -->
           <div id="collection-existing-wrapper" class="hidden">
-            <label for="collection-select" class="mb-1 block text-xs text-neutral-500">
+            <label for="collection-select" class="mb-1 block text-sm font-medium ">
               Ajouter à une collection existante
             </label>
             <select
               id="collection-select"
-              class="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+              class="c-select bg-white"
             >
               <option value="">— Sélectionner —</option>
             </select>
-            <div class="my-3 flex items-center gap-2 text-xs text-neutral-400">
+            <div class="my-3 flex items-center gap-2">
               <hr class="flex-1 border-neutral-200" />
               <span>ou</span>
               <hr class="flex-1 border-neutral-200" />
             </div>
           </div>
           
-          <label for="collection-input" class="mb-1 block text-xs text-neutral-500">
+          <label for="collection-input" class="mb-1 block text-sm font-medium">
             Nouvelle collection
           </label>
           <input
@@ -128,15 +123,15 @@ import BarcodeScanner from '../components/BarcodeScanner.astro';
             name="collection"
             placeholder="ex : Astérix"
             autocomplete="off"
-            class="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+            class="c-input"
           />
         </div>
 
-        
+
       </div>
 
       <div id="volume-row" class="mb-6 hidden">
-        <label for="volume-input" class="mb-1 block text-sm font-medium text-neutral-700">
+        <label for="volume-input" class="mb-1 block text-sm font-medium ">
           Numéro de tome
         </label>
         <input
@@ -145,55 +140,45 @@ import BarcodeScanner from '../components/BarcodeScanner.astro';
           name="volume"
           min="1"
           placeholder="1"
-          class="w-32 rounded-lg border border-neutral-200 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+          class="c-input w-32"
         />
       </div>
 
     </div>
 
     <!-- État : succès -->
-    <div id="state-success" class="hidden rounded-lg border border-green-200 bg-green-50 p-4">
-      <p class="mb-3 text-sm text-green-700">Livre ajouté avec succès !</p>
-      <div class="flex gap-2">
-        <button
-          type="button"
-          id="add-another-btn"
-          class="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700"
-        >
-          Ajouter un autre
-        </button>
-        <a
-          href="/"
-          class="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100"
-        >
+    <div id="state-success" class="mt-4 hidden">
+      <div class="c-alert c-alert--success mb-4">
+        <p class="text-sm font-medium">Livre ajouté avec succès !</p>
+      </div>
+      <div class="flex flex-col gap-2">
+        <Button class="w-full" href="/" variant="secondary-outline" size="md">
           Voir ma bibliothèque
-        </a>
+        </Button>
+        <Button class="w-full" id="add-another-btn" variant="secondary" size="md">
+          Ajouter un autre livre
+        </Button>
+        
       </div>
     </div>
   </div>
 
-  <!-- Barre d'actions fixe (visible quand le formulaire est affiché) -->
+  <!-- Barre d'actions fixe -->
   <div
     id="form-actions"
-    class="fixed bottom-0 left-0 right-0 hidden border-t border-neutral-200 bg-white px-4 py-3 shadow-[0_-1px_8px_rgba(0,0,0,0.06)]"
+    class="fixed bottom-0 left-0 right-0 border-t border-neutral-200 bg-white px-4 py-3 shadow-[0_-1px_8px_rgba(0,0,0,0.06)]"
   >
     <div class="mx-auto flex max-w-lg gap-3">
-      <a
-        href="/"
-        id="cancel-btn"
-        class="flex flex-1 items-center justify-center rounded-lg border border-neutral-200 px-4 py-3 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-      >
+      <Button id="cancel-btn" href="/" variant="secondary-outline" size="lg" class="flex-1">
         Annuler
-      </a>
-      <button
-        type="button"
-        id="submit-btn"
-        class="flex flex-1 items-center justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-      >
-        Ajouter le livre
-      </button>
+      </Button>
+      <Button id="submit-btn" variant="primary" size="lg" class="flex-1">
+        Ajouter
+      </Button>
     </div>
   </div>
+
+  <template id="tpl-icon-loading"><Icon name="loading" size={16} class="animate-spin" /></template>
 </BaseLayout>
 
 <script>
@@ -203,331 +188,338 @@ import { isLoggedIn } from '../utils/auth';
 import { buildBook, extractVolume, lookupByEan } from '../utils/openLibrary';
 import { translateToFrench } from '../utils/translate';
 
-  // ─── Guard auth ────────────────────────────────────────────────────────────────
+  document.addEventListener('astro:page-load', async () => {
+    // ─── Guard auth ────────────────────────────────────────────────────────────────
 
-  if (!isLoggedIn()) {
-    window.location.replace('/');
-  }
+    if (!isLoggedIn()) {
+      window.location.replace('/');
+    }
 
-  // Masquer le FAB sur cette page
-  document.getElementById('fab-add')?.classList.add('hidden');
+    // Éléments
+    const eanInput = document.getElementById('ean-input') as HTMLInputElement;
+    const scanBtn = document.getElementById('scan-btn')!;
+    const searchBtn = document.getElementById('search-btn')!;
+    const alertZone = document.getElementById('alert-zone')!;
+    const bookInfo = document.getElementById('book-info')!;
+    const extraFields = document.getElementById('extra-fields')!;
+    const coverPreview = document.getElementById('cover-preview')!;
+    const titleInput = document.getElementById('title-input') as HTMLInputElement;
+    const subtitleInput = document.getElementById('subtitle-input') as HTMLInputElement;
+    const authorsInput = document.getElementById('authors-input') as HTMLInputElement;
+    const collectionInput = document.getElementById('collection-input') as HTMLInputElement;
+    const collectionSelect = document.getElementById('collection-select') as HTMLSelectElement;
+    const collectionExistingWrapper = document.getElementById('collection-existing-wrapper')!;
+    const volumeRow = document.getElementById('volume-row')!;
+    const submitBtn = document.getElementById('submit-btn')!;
+    const stateSuccess = document.getElementById('state-success')!;
+    const addAnotherBtn = document.getElementById('add-another-btn')!;
 
-  // ─── Barre d'actions fixe ─────────────────────────────────────────────────────
+    // ─── Mode édition ──────────────────────────────────────────────────────────────
 
-  const formActions = document.getElementById('form-actions')!;
+    const editId = new URLSearchParams(location.search).get('id');
 
-  function showFormActions(): void {
-    formActions.classList.remove('hidden');
-  }
+    if (editId) {
+      const existing = await getBookById(editId);
+      if (existing) {
+        (document.querySelector('h1') as HTMLElement).textContent = 'Modifier le livre';
+        submitBtn.textContent = 'Enregistrer';
+        scanBtn.hidden = true;
 
-  function hideFormActions(): void {
-    formActions.classList.add('hidden');
-  }
+        eanInput.value = existing.ean;
+        eanInput.readOnly = true;
+        titleInput.value = existing.title;
+        subtitleInput.value = existing.subtitle ?? '';
+        authorsInput.value = existing.authors.join(', ');
 
-  // Éléments
-  const eanInput = document.getElementById('ean-input') as HTMLInputElement;
-  const scanBtn = document.getElementById('scan-btn')!;
-  const eanStatus = document.getElementById('ean-status')!;
-  const bookInfo = document.getElementById('book-info')!;
-  const extraFields = document.getElementById('extra-fields')!;
-  const coverPreview = document.getElementById('cover-preview')!;
-  const titleInput = document.getElementById('title-input') as HTMLInputElement;
-  const subtitleInput = document.getElementById('subtitle-input') as HTMLInputElement;
-  const authorsInput = document.getElementById('authors-input') as HTMLInputElement;
-  const collectionInput = document.getElementById('collection-input') as HTMLInputElement;
-  const collectionSelect = document.getElementById('collection-select') as HTMLSelectElement;
-  const collectionExistingWrapper = document.getElementById('collection-existing-wrapper')!;
-  const volumeRow = document.getElementById('volume-row')!;
-  const submitBtn = document.getElementById('submit-btn')!;
-  const stateOwned = document.getElementById('state-owned')!;
-  const stateSuccess = document.getElementById('state-success')!;
-  const addAnotherBtn = document.getElementById('add-another-btn')!;
+        if (existing.collection) {
+          const volInput = document.getElementById('volume-input') as HTMLInputElement;
+          volInput.value = String(existing.collection.volume);
+          volumeRow.classList.remove('hidden');
+        }
 
-  // ─── Mode édition ──────────────────────────────────────────────────────────────
+        const existingCoverUrl = getEffectiveCoverUrl(existing);
+        if (existingCoverUrl) {
+          const img = document.createElement('img');
+          img.src = existingCoverUrl;
+          img.alt = '';
+          img.className = 'h-full w-full object-cover';
+          coverPreview.appendChild(img);
+        }
 
-  const editId = new URLSearchParams(location.search).get('id');
+        showForm();
+        await refreshCollectionSelect(existing.collection?.name ?? null);
+      }
+    } else {
+      refreshCollectionSelect();
+    }
 
-  if (editId) {
-    const existing = await getBookById(editId);
-    if (existing) {
-      (document.querySelector('h1') as HTMLElement).textContent = 'Modifier le livre';
-      submitBtn.textContent = 'Enregistrer les modifications';
-      scanBtn.hidden = true;
+    async function refreshCollectionSelect(preselect: string | null = null): Promise<void> {
+      const names = await getCollectionNames();
+      if (names.length === 0) {
+        collectionExistingWrapper.classList.add('hidden');
+        return;
+      }
+      collectionExistingWrapper.classList.remove('hidden');
+      collectionSelect.innerHTML =
+        '<option value="">— Sélectionner —</option>' +
+        names.map((n) => `<option value="${n}">${n}</option>`).join('');
+      if (preselect) {
+        collectionSelect.value = preselect;
+        collectionInput.value = '';
+      }
+    }
 
-      eanInput.value = existing.ean;
-      eanInput.readOnly = true;
-      titleInput.value = existing.title;
-      subtitleInput.value = existing.subtitle ?? '';
-      authorsInput.value = existing.authors.join(', ');
+    let pendingCoverUrl: string | null = null;
+    let pendingOpenLibraryUrl: string | null = null;
+    let isManual = false;
 
-      if (existing.collection) {
-        const volInput = document.getElementById('volume-input') as HTMLInputElement;
-        volInput.value = String(existing.collection.volume);
-        volumeRow.classList.remove('hidden');
+    // ─── Helpers ───────────────────────────────────────────────────────────────────
+
+    function showAlert(msg: string, type: 'alert' | 'success' | 'info' = 'info'): void {
+      const modifier = type === 'info' ? '' : ` c-alert--${type}`;
+      alertZone.className = `mb-6 c-alert${modifier}`;
+      alertZone.innerHTML = `<p class="text-sm font-medium">${msg}</p>`;
+    }
+
+    function hideAlert(): void {
+      alertZone.className = 'mb-6 hidden';
+      alertZone.innerHTML = '';
+    }
+
+    function hideAllStates(): void {
+      hideAlert();
+      stateSuccess.classList.add('hidden');
+    }
+
+    function showForm(): void {
+      bookInfo.classList.remove('hidden');
+      extraFields.classList.remove('hidden');
+    }
+
+    function hideForm(): void {
+      bookInfo.classList.add('hidden');
+      extraFields.classList.add('hidden');
+    }
+
+    function showSuccessState(): void {
+      hideForm();
+      hideAlert();
+      stateSuccess.classList.remove('hidden');
+    }
+
+    function resetForm(): void {
+      eanInput.value = '';
+      titleInput.value = '';
+      titleInput.readOnly = false;
+      subtitleInput.value = '';
+      subtitleInput.readOnly = false;
+      authorsInput.value = '';
+      authorsInput.readOnly = false;
+      coverPreview.innerHTML = '';
+      collectionInput.value = '';
+      collectionSelect.value = '';
+      volumeRow.classList.add('hidden');
+      pendingCoverUrl = null;
+      pendingOpenLibraryUrl = null;
+      isManual = false;
+      hideForm();
+      hideAllStates();
+    }
+
+    // ─── Scan ──────────────────────────────────────────────────────────────────────
+
+    scanBtn.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('open-scanner'));
+    });
+
+    document.addEventListener('ean-detected', (e) => {
+      const ean = (e as CustomEvent<{ ean: string }>).detail.ean;
+      eanInput.value = ean;
+      triggerLookup(ean);
+    });
+
+    // ─── Recherche manuelle ────────────────────────────────────────────────────────
+
+    function triggerSearch(): void {
+      const val = eanInput.value.trim();
+      if (val.length === 13 && /^\d{13}$/.test(val)) {
+        triggerLookup(val);
+      } else {
+        showAlert('Saisissez un EAN / ISBN à 13 chiffres.', 'alert');
+      }
+    }
+
+    searchBtn.addEventListener('click', triggerSearch);
+
+    eanInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        triggerSearch();
+      }
+    });
+
+    // ─── Lookup ────────────────────────────────────────────────────────────────────
+
+    async function triggerLookup(ean: string) {
+      // Réinitialiser les champs du livre précédent
+      coverPreview.innerHTML = '';
+      pendingCoverUrl = null;
+      pendingOpenLibraryUrl = null;
+      titleInput.value = '';
+      titleInput.readOnly = false;
+      subtitleInput.value = '';
+      subtitleInput.readOnly = false;
+      authorsInput.value = '';
+      authorsInput.readOnly = false;
+      (document.getElementById('volume-input') as HTMLInputElement).value = '';
+      volumeRow.classList.add('hidden');
+
+      hideAllStates();
+      hideForm();
+      showAlert('Recherche en cours…');
+
+      // 1. Vérif doublon
+      const existing = await getBookByEan(ean);
+      if (existing) {
+        showAlert('Ce livre est déjà dans ta bibliothèque.', 'alert');
+        return;
       }
 
-      const existingCoverUrl = getEffectiveCoverUrl(existing);
-      if (existingCoverUrl) {
+      // 2. Open Library
+      const result = await lookupByEan(ean);
+
+      if (!result || !result.title) {
+        showAlert('Introuvable — renseignez les informations manuellement.', 'info');
+        isManual = true;
+        titleInput.readOnly = false;
+        subtitleInput.readOnly = false;
+        authorsInput.readOnly = false;
+        showForm();
+        return;
+      }
+
+      // 3. Remplissage automatique (avec traduction si japonais détecté)
+      showAlert('Livre trouvé ! Vérifiez les informations et ajoutez le livre.', 'success');
+      isManual = false;
+
+      const [title, subtitle, ...translatedAuthors] = await Promise.all([
+        translateToFrench(result.title),
+        result.subtitle ? translateToFrench(result.subtitle) : Promise.resolve(''),
+        ...result.authors.map((a) => translateToFrench(a)),
+      ]);
+
+      titleInput.value = title;
+      titleInput.readOnly = true;
+      subtitleInput.value = subtitle;
+      subtitleInput.readOnly = result.subtitle !== null;
+      authorsInput.value = translatedAuthors.join(', ');
+      authorsInput.readOnly = true;
+
+      const detectedVolume = extractVolume(result.title);
+      if (detectedVolume !== null) {
+        (document.getElementById('volume-input') as HTMLInputElement).value = String(detectedVolume);
+        volumeRow.classList.remove('hidden');
+      }
+      pendingCoverUrl = result.coverUrl;
+      pendingOpenLibraryUrl = result.openLibraryUrl;
+
+      if (result.coverUrl) {
         const img = document.createElement('img');
-        img.src = existingCoverUrl;
+        img.src = result.coverUrl;
         img.alt = '';
         img.className = 'h-full w-full object-cover';
         coverPreview.appendChild(img);
       }
 
-      showFormActions();
-      await refreshCollectionSelect(existing.collection?.name ?? null);
-    }
-  } else {
-    showFormActions();
-    refreshCollectionSelect();
-  }
-
-  async function refreshCollectionSelect(preselect: string | null = null): Promise<void> {
-    const names = await getCollectionNames();
-    if (names.length === 0) {
-      collectionExistingWrapper.classList.add('hidden');
-      return;
-    }
-    collectionExistingWrapper.classList.remove('hidden');
-    collectionSelect.innerHTML =
-      '<option value="">— Sélectionner —</option>' +
-      names.map((n) => `<option value="${n}">${n}</option>`).join('');
-    if (preselect) {
-      collectionSelect.value = preselect;
-      collectionInput.value = '';
-    }
-  }
-
-  let pendingCoverUrl: string | null = null;
-  let isManual = false;
-
-  // ─── Helpers ───────────────────────────────────────────────────────────────────
-
-  function setStatus(msg: string, type: 'neutral' | 'error' | 'success' = 'neutral'): void {
-    eanStatus.textContent = msg;
-    if (type === 'success') {
-      eanStatus.className = 'mt-2 block rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm font-medium text-green-800';
-    } else if (type === 'error') {
-      eanStatus.className = 'mt-2 text-xs text-red-600';
-    } else {
-      eanStatus.className = 'mt-2 text-xs text-neutral-400';
-    }
-  }
-
-  function hideAllStates(): void {
-    stateOwned.classList.add('hidden');
-    stateSuccess.classList.add('hidden');
-  }
-
-  function showSuccessState(): void {
-    bookInfo.classList.add('hidden');
-    extraFields.classList.add('hidden');
-    hideFormActions();
-    stateOwned.classList.add('hidden');
-    stateSuccess.classList.remove('hidden');
-  }
-
-  function resetForm(): void {
-    eanInput.value = '';
-    titleInput.value = '';
-    titleInput.readOnly = false;
-    subtitleInput.value = '';
-    subtitleInput.readOnly = false;
-    authorsInput.value = '';
-    authorsInput.readOnly = false;
-    coverPreview.innerHTML = '';
-    collectionInput.value = '';
-    collectionSelect.value = '';
-    volumeRow.classList.add('hidden');
-    pendingCoverUrl = null;
-    isManual = false;
-    setStatus('');
-    bookInfo.classList.remove('hidden');
-    extraFields.classList.remove('hidden');
-    hideAllStates();
-    showFormActions();
-  }
-
-  // ─── Scan ──────────────────────────────────────────────────────────────────────
-
-  scanBtn.addEventListener('click', () => {
-    document.dispatchEvent(new CustomEvent('open-scanner'));
-  });
-
-  document.addEventListener('ean-detected', (e) => {
-    const ean = (e as CustomEvent<{ ean: string }>).detail.ean;
-    eanInput.value = ean;
-    triggerLookup(ean);
-  });
-
-  // ─── Saisie manuelle ───────────────────────────────────────────────────────────
-
-  let debounceTimer: ReturnType<typeof setTimeout>;
-  eanInput.addEventListener('input', () => {
-    clearTimeout(debounceTimer);
-    const val = eanInput.value.trim();
-    if (val.length === 13 && /^\d{13}$/.test(val)) {
-      debounceTimer = setTimeout(() => triggerLookup(val), 400);
-    } else {
-      hideAllStates();
-      setStatus('');
-    }
-  });
-
-  // ─── Lookup ────────────────────────────────────────────────────────────────────
-
-  async function triggerLookup(ean: string) {
-    // Réinitialiser les champs du livre précédent
-    coverPreview.innerHTML = '';
-    pendingCoverUrl = null;
-    titleInput.value = '';
-    titleInput.readOnly = false;
-    subtitleInput.value = '';
-    subtitleInput.readOnly = false;
-    authorsInput.value = '';
-    authorsInput.readOnly = false;
-    (document.getElementById('volume-input') as HTMLInputElement).value = '';
-    volumeRow.classList.add('hidden');
-
-    hideAllStates();
-    setStatus('Recherche en cours...');
-
-    // 1. Vérif doublon
-    const existing = await getBookByEan(ean);
-    if (existing) {
-      setStatus('');
-      stateOwned.classList.remove('hidden');
-      return;
+      showForm();
+      refreshCollectionSelect();
     }
 
-    // 2. Open Library
-    const result = await lookupByEan(ean);
+    // ─── Collection / tome ─────────────────────────────────────────────────────────
 
-    if (!result || !result.title) {
-      setStatus('Introuvable dans Open Library — renseignez les informations manuellement.', 'neutral');
-      isManual = true;
-      titleInput.readOnly = false;
-      subtitleInput.readOnly = false;
-      authorsInput.readOnly = false;
-      return;
+    function activeCollection(): string {
+      return collectionSelect.value || collectionInput.value.trim();
     }
 
-    // 3. Remplissage automatique (avec traduction si japonais détecté)
-    setStatus('Livre trouvé !', 'success');
-    isManual = false;
+    collectionInput.addEventListener('input', () => {
+      if (collectionInput.value.trim()) collectionSelect.value = '';
+      volumeRow.classList.toggle('hidden', activeCollection() === '');
+    });
 
-    const [title, subtitle, ...translatedAuthors] = await Promise.all([
-      translateToFrench(result.title),
-      result.subtitle ? translateToFrench(result.subtitle) : Promise.resolve(''),
-      ...result.authors.map((a) => translateToFrench(a)),
-    ]);
+    collectionSelect.addEventListener('change', () => {
+      if (collectionSelect.value) collectionInput.value = '';
+      volumeRow.classList.toggle('hidden', activeCollection() === '');
+    });
 
-    titleInput.value = title;
-    titleInput.readOnly = true;
-    subtitleInput.value = subtitle;
-    subtitleInput.readOnly = result.subtitle !== null;
-    authorsInput.value = translatedAuthors.join(', ');
-    authorsInput.readOnly = true;
+    // ─── Soumission ────────────────────────────────────────────────────────────────
 
-    const detectedVolume = extractVolume(result.title);
-    if (detectedVolume !== null) {
-      (document.getElementById('volume-input') as HTMLInputElement).value = String(detectedVolume);
-      volumeRow.classList.remove('hidden');
-    }
-    pendingCoverUrl = result.coverUrl;
+    const submitBtnText = submitBtn.textContent ?? '';
 
-    if (result.coverUrl) {
-      const img = document.createElement('img');
-      img.src = result.coverUrl;
-      img.alt = '';
-      img.className = 'h-full w-full object-cover';
-      coverPreview.appendChild(img);
+    function setSubmitLoading(loading: boolean): void {
+      (submitBtn as HTMLButtonElement).disabled = loading;
+      if (loading) {
+        const tpl = document.getElementById('tpl-icon-loading') as HTMLTemplateElement;
+        submitBtn.textContent = '';
+        submitBtn.appendChild(tpl.content.cloneNode(true));
+        submitBtn.append('Enregistrement…');
+      } else {
+        submitBtn.textContent = submitBtnText;
+      }
     }
 
-    refreshCollectionSelect();
-  }
+    submitBtn.addEventListener('click', async () => {
+      const ean = eanInput.value.trim();
+      const title = titleInput.value.trim();
 
-  // ─── Collection / tome ─────────────────────────────────────────────────────────
-
-  function activeCollection(): string {
-    return collectionSelect.value || collectionInput.value.trim();
-  }
-
-  collectionInput.addEventListener('input', () => {
-    if (collectionInput.value.trim()) collectionSelect.value = '';
-    volumeRow.classList.toggle('hidden', activeCollection() === '');
-  });
-
-  collectionSelect.addEventListener('change', () => {
-    if (collectionSelect.value) collectionInput.value = '';
-    volumeRow.classList.toggle('hidden', activeCollection() === '');
-  });
-
-  // ─── Soumission ────────────────────────────────────────────────────────────────
-
-  const submitBtnText = submitBtn.textContent ?? '';
-
-  function setSubmitLoading(loading: boolean): void {
-    (submitBtn as HTMLButtonElement).disabled = loading;
-    submitBtn.innerHTML = loading
-      ? `<svg class="animate-spin mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>Enregistrement…`
-      : submitBtnText;
-  }
-
-  submitBtn.addEventListener('click', async () => {
-    const ean = eanInput.value.trim();
-    const title = titleInput.value.trim();
-
-    if (!ean || !title) {
-      setStatus('Veuillez renseigner l\'EAN et le titre.', 'error');
-      return;
-    }
-
-    const authors = authorsInput.value.split(',').map((a) => a.trim()).filter(Boolean);
-    const collection = activeCollection() || null;
-    const volume = collection
-      ? parseInt((document.getElementById('volume-input') as HTMLInputElement).value, 10) || 1
-      : null;
-
-    const subtitle = subtitleInput.value.trim() || null;
-
-    setSubmitLoading(true);
-    try {
-      if (editId) {
-        const existing = await getBookById(editId);
-        if (!existing) { setStatus('Livre introuvable.', 'error'); return; }
-        const collectionSlug = collection
-          ? collection.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-          : null;
-        const updatedBook: Book = {
-          ...existing,
-          title,
-          subtitle,
-          authors,
-          collection: collection && collectionSlug && volume !== null
-            ? { name: collection, slug: collectionSlug, volume }
-            : null,
-        };
-        await saveBook(updatedBook);
-        window.location.href = '/';
+      if (!ean || !title) {
+        showAlert('Veuillez d\'abord rechercher un livre par EAN / ISBN.', 'alert');
         return;
       }
 
-      // Upload couverture avant de sauvegarder (PHP télécharge depuis Open Library)
-      const book = buildBook({ title, subtitle, authors, coverUrl: pendingCoverUrl, ean }, collection, volume);
-      if (pendingCoverUrl) {
-        book.cover = await uploadCover(book.id, pendingCoverUrl);
+      const authors = authorsInput.value.split(',').map((a) => a.trim()).filter(Boolean);
+      const collection = activeCollection() || null;
+      const volume = collection
+        ? parseInt((document.getElementById('volume-input') as HTMLInputElement).value, 10) || 1
+        : null;
+
+      const subtitle = subtitleInput.value.trim() || null;
+
+      setSubmitLoading(true);
+      try {
+        if (editId) {
+          const existing = await getBookById(editId);
+          if (!existing) { setStatus('Livre introuvable.', 'error'); return; }
+          const collectionSlug = collection
+            ? collection.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+            : null;
+          const updatedBook: Book = {
+            ...existing,
+            title,
+            subtitle,
+            authors,
+            collection: collection && collectionSlug && volume !== null
+              ? { name: collection, slug: collectionSlug, volume }
+              : null,
+          };
+          await saveBook(updatedBook);
+          window.location.href = '/';
+          return;
+        }
+
+        // Upload couverture avant de sauvegarder (PHP télécharge depuis Open Library)
+        const book = buildBook({ title, subtitle, authors, coverUrl: pendingCoverUrl, openLibraryUrl: pendingOpenLibraryUrl, ean }, collection, volume);
+        if (pendingCoverUrl) {
+          book.cover = await uploadCover(book.id, pendingCoverUrl);
+        }
+        await saveBook(book);
+        showSuccessState();
+      } finally {
+        setSubmitLoading(false);
       }
-      await saveBook(book);
-      setStatus('');
-      showSuccessState();
-    } finally {
-      setSubmitLoading(false);
-    }
+    });
+
+    // ─── Succès → ajouter un autre ─────────────────────────────────────────────────
+
+    addAnotherBtn.addEventListener('click', resetForm);
   });
-
-  // ─── Succès → ajouter un autre ─────────────────────────────────────────────────
-
-  addAnotherBtn.addEventListener('click', resetForm);
 </script>

@@ -1,4 +1,6 @@
 ---
+import Icon from './Icon.astro';
+
 interface Props {
   placeholder?: string;
 }
@@ -7,51 +9,42 @@ const { placeholder = 'Rechercher...' } = Astro.props;
 ---
 
 <div class="relative">
-  <svg
-    class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    aria-hidden="true"
-  >
-    <circle cx="11" cy="11" r="8"></circle>
-    <path d="m21 21-4.35-4.35"></path>
-  </svg>
+  <Icon name="search" size={24} class="absolute left-3 top-1/2 -translate-y-1/2 " />
   <input
     type="search"
     id="search-input"
     placeholder={placeholder}
     autocomplete="off"
-    class="w-full rounded-lg border border-neutral-200 bg-white py-2.5 pl-9 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+    class="c-input--search"
     aria-label={placeholder}
   />
 </div>
-<p id="search-empty" class="mt-6 text-sm text-neutral-400" hidden>
+
+<p id="search-empty" class="mt-6 text-sm text-text-light" hidden>
   Aucun résultat pour cette recherche.
 </p>
 
 <script>
-  const input = document.querySelector<HTMLInputElement>('#search-input');
-  const emptyState = document.querySelector<HTMLElement>('#search-empty');
+  document.addEventListener('astro:page-load', () => {
+    const input = document.querySelector<HTMLInputElement>('#search-input');
+    const emptyState = document.querySelector<HTMLElement>('#search-empty');
 
-  function filterItems(query: string): void {
-    const items = document.querySelectorAll<HTMLElement>('[data-search]');
-    let visibleCount = 0;
+    function filterItems(query: string): void {
+      const items = document.querySelectorAll<HTMLElement>('[data-search]');
+      let visibleCount = 0;
 
-    items.forEach((item) => {
-      const text = item.dataset.search?.toLowerCase() ?? '';
-      const matches = query === '' || text.includes(query);
-      item.hidden = !matches;
-      if (matches) visibleCount++;
+      items.forEach((item) => {
+        const text = item.dataset.search?.toLowerCase() ?? '';
+        const matches = query === '' || text.includes(query);
+        item.hidden = !matches;
+        if (matches) visibleCount++;
+      });
+
+      if (emptyState) emptyState.hidden = visibleCount > 0;
+    }
+
+    input?.addEventListener('input', () => {
+      filterItems(input.value.toLowerCase().trim());
     });
-
-    if (emptyState) emptyState.hidden = visibleCount > 0;
-  }
-
-  input?.addEventListener('input', () => {
-    filterItems(input.value.toLowerCase().trim());
   });
 </script>

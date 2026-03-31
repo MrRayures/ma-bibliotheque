@@ -1,4 +1,6 @@
 ---
+import Button from './Button.astro';
+import Icon from './Icon.astro';
 ---
 
 <dialog
@@ -8,16 +10,9 @@
 >
   <div class="flex items-center justify-between bg-neutral-900 px-4 py-3">
     <h2 id="scanner-title" class="text-sm font-medium text-white">Scanner un code-barres</h2>
-    <button
-      id="scanner-close"
-      type="button"
-      class="rounded p-1 text-neutral-400 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-      aria-label="Fermer le scanner"
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <path d="M18 6 6 18M6 6l12 12"/>
-      </svg>
-    </button>
+    <Button id="scanner-close" variant="ghost" size="sm" aria-label="Fermer le scanner">
+      <Icon name="close" size={18} slot="icon" />
+    </Button>
   </div>
 
   <div class="relative aspect-square w-full overflow-hidden bg-black">
@@ -28,7 +23,7 @@
   </div>
 
   <div class="bg-neutral-900 px-4 py-3">
-    <p id="scanner-status" class="text-center text-xs text-neutral-400">
+    <p id="scanner-status" class="text-center text-xs text-text-light">
       Pointez la caméra vers le code-barres
     </p>
   </div>
@@ -37,61 +32,63 @@
 <script>
   import { BrowserMultiFormatReader } from '@zxing/browser';
 
-  const dialog = document.getElementById('scanner-dialog') as HTMLDialogElement;
-  const video = document.getElementById('scanner-video') as HTMLVideoElement;
-  const statusEl = document.getElementById('scanner-status')!;
-  const closeBtn = document.getElementById('scanner-close')!;
+  document.addEventListener('astro:page-load', () => {
+    const dialog = document.getElementById('scanner-dialog') as HTMLDialogElement;
+    const video = document.getElementById('scanner-video') as HTMLVideoElement;
+    const statusEl = document.getElementById('scanner-status')!;
+    const closeBtn = document.getElementById('scanner-close')!;
 
-  const reader = new BrowserMultiFormatReader();
-  let scanning = false;
+    const reader = new BrowserMultiFormatReader();
+    let scanning = false;
 
-  function isBookEan(code: string): boolean {
-    return /^\d{13}$/.test(code) && (code.startsWith('978') || code.startsWith('979'));
-  }
+    function isBookEan(code: string): boolean {
+      return /^\d{13}$/.test(code) && (code.startsWith('978') || code.startsWith('979'));
+    }
 
-  function closeScanner() {
-    dialog.close();
-    try { reader.reset(); } catch { /* ignore — peut échouer sur Android si déjà arrêté */ }
-    scanning = false;
-    statusEl.textContent = 'Pointez la caméra vers le code-barres';
-  }
+    function closeScanner() {
+      dialog.close();
+      try { reader.reset(); } catch { /* ignore — peut échouer sur Android si déjà arrêté */ }
+      scanning = false;
+      statusEl.textContent = 'Pointez la caméra vers le code-barres';
+    }
 
-  closeBtn.addEventListener('click', closeScanner);
-  dialog.addEventListener('click', (e) => {
-    if (e.target === dialog) closeScanner();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && dialog.open) closeScanner();
-  });
+    closeBtn.addEventListener('click', closeScanner);
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) closeScanner();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && dialog.open) closeScanner();
+    });
 
-  document.addEventListener('open-scanner', async () => {
-    if (scanning) return;
-    scanning = true;
-    dialog.showModal();
-    statusEl.textContent = 'Démarrage de la caméra...';
+    document.addEventListener('open-scanner', async () => {
+      if (scanning) return;
+      scanning = true;
+      dialog.showModal();
+      statusEl.textContent = 'Démarrage de la caméra...';
 
-    try {
-      await reader.decodeFromVideoDevice(undefined, video, (result, err) => {
-        if (!scanning) return; // callbacks résiduels post-reset
-        if (result) {
-          const code = result.getText();
-          if (!isBookEan(code)) {
-            statusEl.textContent = 'Code non reconnu — pointez vers un code-barres de livre (ISBN)';
+      try {
+        await reader.decodeFromVideoDevice(undefined, video, (result, err) => {
+          if (!scanning) return; // callbacks résiduels post-reset
+          if (result) {
+            const code = result.getText();
+            if (!isBookEan(code)) {
+              statusEl.textContent = 'Code non reconnu — pointez vers un code-barres de livre (ISBN)';
+              return;
+            }
+            scanning = false; // bloquer les fires suivants avant closeScanner
+            document.dispatchEvent(new CustomEvent('ean-detected', { detail: { ean: code } }));
+            closeScanner();
             return;
           }
-          scanning = false; // bloquer les fires suivants avant closeScanner
-          document.dispatchEvent(new CustomEvent('ean-detected', { detail: { ean: code } }));
-          closeScanner();
-          return;
-        }
-        if (err && !err.message?.includes('No MultiFormat Readers')) {
-          statusEl.textContent = 'Erreur caméra. Réessayez.';
-        }
-      });
-      statusEl.textContent = 'Pointez la caméra vers le code-barres';
-    } catch {
-      statusEl.textContent = 'Accès à la caméra refusé.';
-      scanning = false;
-    }
+          if (err && !err.message?.includes('No MultiFormat Readers')) {
+            statusEl.textContent = 'Erreur caméra. Réessayez.';
+          }
+        });
+        statusEl.textContent = 'Pointez la caméra vers le code-barres';
+      } catch {
+        statusEl.textContent = 'Accès à la caméra refusé.';
+        scanning = false;
+      }
+    });
   });
 </script>

@@ -6,6 +6,9 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "icons": "node scripts/generate-icons.mjs",
+    "predev": "npm run icons",
+    "prebuild": "npm run icons",
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",

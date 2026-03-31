@@ -1,5 +1,12 @@
 ---
 import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+import BookDialog from '../components/BookDialog.astro';
+import LoginDialog from '../components/LoginDialog.astro';
+import OptionsDialog from '../components/OptionsDialog.astro';
+import Button from '../components/Button.astro';
+import Icon from '../components/Icon.astro';
+import Logo from '../components/Logo.astro';
 
 interface Props {
   title?: string;
@@ -20,522 +27,86 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#171717" />
     <title>{title}</title>
-    <link rel="stylesheet" href="/assets/styles/dialogs.css" />
+    <ClientRouter />
   </head>
-  <body class="min-h-screen bg-neutral-50 text-neutral-900">
-    <header class="sticky top-0 z-10 border-b border-neutral-200 bg-white">
+  <body class="min-h-screen ">
+
+    <header class="sticky h-15 top-0 z-10 border-b-2  border-secondary bg-white">
       <div class="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <a href="/" class="text-base font-bold tracking-tight text-neutral-900">
-          Bibliothèque
+        <a href="/" class="flex items-center gap-2" aria-label="Accueil">
+          <Logo size={40} eye="default" />
+          <span class="text-base font-bold tracking-tight">Blibli</span>
         </a>
         <div class="flex items-center gap-2">
           <nav aria-label="Navigation principale">
-            <ul class="flex gap-1" role="list">
+            <ul class="flex gap-3" role="list">
               <li>
-                <a
-                  href="/"
-                  class={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                    currentPath === '/'
-                      ? 'bg-neutral-900 text-white'
-                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
-                  }`}
-                  aria-current={currentPath === '/' ? 'page' : undefined}
-                >
+                <Button href="/" variant="primary-outline" size="md" aria-current={currentPath === '/' ? 'page' : undefined}>
                   Livres
-                </a>
+                </Button>
               </li>
               <li>
-                <a
-                  href="/collections"
-                  class={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                    currentPath === '/collections'
-                      ? 'bg-neutral-900 text-white'
-                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
-                  }`}
-                  aria-current={currentPath === '/collections' ? 'page' : undefined}
-                >
+                <Button href="/collections" variant="primary-outline" size="md" aria-current={currentPath === '/collections' ? 'page' : undefined}>
                   Collections
-                </a>
+                </Button>
               </li>
             </ul>
           </nav>
           <div class="flex items-center gap-1 border-l border-neutral-200 pl-2">
-            <!-- Bouton déconnexion (visible si connecté) -->
-            <button
-              id="logout-btn"
-              type="button"
-              aria-label="Se déconnecter"
-              class="hidden rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-            </button>
-            <!-- Bouton connexion (visible si non connecté) -->
-            <button
-              id="login-btn"
-              type="button"
-              aria-label="Se connecter"
-              class="rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-            </button>
-            <!-- Bouton options (visible si connecté) -->
-            <button
-              id="options-btn"
-              type="button"
-              aria-label="Options"
-              class="hidden rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </svg>
-            </button>
+            <Button id="login-btn" variant="secondary-outline" size="md" aria-label="Se connecter">
+              <Icon name="user" size={16} slot="icon" />
+            </Button>
+            <Button id="options-btn" variant="secondary-outline" size="md" aria-label="Options" hidden>
+              <Icon name="settings" size={16} slot="icon" />
+            </Button>
           </div>
         </div>
       </div>
     </header>
+
     <main>
       <slot />
     </main>
-    <!-- FAB Ajouter (visible si connecté) -->
-    <a
-      id="fab-add"
-      href="/ajouter"
-      aria-label="Ajouter un livre"
-      class="hidden fixed bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-neutral-900 text-white shadow-lg transition-transform hover:scale-105 hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 active:scale-95"
-    >
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <path d="M12 5v14M5 12h14"/>
-      </svg>
-    </a>
+    
+    {currentPath !== '/ajouter' && (
+      <Button
+        id="fab-add"
+        href="/ajouter"
+        variant="primary"
+        iconPosition='left'
+        size="lg"
+        aria-label="Ajouter un livre"
+        hidden
+        class="fixed bottom-6 left-1/2 transform -translate-x-1/2  shadow-lg hover:scale-105 active:scale-95"
+      >
+        <Icon name="add" size={24} slot="icon" />
+        Ajouter un livre
+      </Button>
+    )}
 
-    <!-- Dialog fiche livre -->
-    <dialog
-      id="book-dialog"
-      class="w-full max-w-lg rounded-xl border border-neutral-200 bg-white p-0 shadow-xl backdrop:bg-black/50"
-      aria-labelledby="dialog-book-title"
-    >
-      <div class="flex max-h-[85vh] flex-col overflow-hidden sm:flex-row">
-        <!-- Couverture -->
-        <div class="relative h-48 w-full shrink-0 overflow-hidden bg-neutral-100 sm:h-auto sm:w-44 sm:rounded-l-xl">
-          <img id="dialog-cover-img" src="" alt="" class="hidden h-full w-full object-cover" />
-          <div id="dialog-cover-placeholder" class="absolute inset-0 hidden items-center justify-center">
-            <span class="text-5xl font-bold text-neutral-300"></span>
-          </div>
-        </div>
-        <!-- Infos -->
-        <div class="flex flex-1 flex-col overflow-y-auto">
-          <div class="flex items-start justify-between gap-3 border-b border-neutral-100 px-5 py-4">
-            <h2 id="dialog-book-title" class="text-base font-bold leading-snug text-neutral-900"></h2>
-            <button
-              id="book-dialog-close"
-              type="button"
-              aria-label="Fermer"
-              class="shrink-0 rounded p-1 text-neutral-400 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M18 6 6 18M6 6l12 12"/>
-              </svg>
-            </button>
-          </div>
-
-          <dl class="flex flex-1 flex-col gap-3 px-5 py-4 text-sm">
-            <div id="dialog-row-subtitle" class="hidden">
-              <dd id="dialog-subtitle" class="italic text-neutral-500"></dd>
-            </div>
-            <div>
-              <dt class="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Auteur(s)</dt>
-              <dd id="dialog-authors" class="text-neutral-700"></dd>
-            </div>
-            <div id="dialog-row-collection" class="hidden">
-              <dt class="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Collection</dt>
-              <dd id="dialog-collection" class="text-neutral-700"></dd>
-            </div>
-            <div>
-              <dt class="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">EAN</dt>
-              <dd id="dialog-ean" class="font-mono text-neutral-700"></dd>
-            </div>
-            <div>
-              <dt class="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Ajouté le</dt>
-              <dd id="dialog-date" class="text-neutral-700"></dd>
-            </div>
-          </dl>
-
-          <div id="dialog-actions" class="hidden gap-2 border-t border-neutral-100 px-5 py-4 flex">
-            <a
-              id="dialog-edit"
-              href="#"
-              class="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Modifier
-            </a>
-            <button
-              id="dialog-delete"
-              type="button"
-              class="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-              Supprimer
-            </button>
-          </div>
-        </div>
-      </div>
-    </dialog>
-
-    <!-- Dialog Options -->
-    <dialog
-      id="options-dialog"
-      class="w-full max-w-sm rounded-xl border border-neutral-200 bg-white p-0 shadow-xl backdrop:bg-black/50"
-      aria-labelledby="options-title"
-    >
-      <div class="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
-        <h2 id="options-title" class="text-sm font-semibold text-neutral-900">Options</h2>
-        <button
-          id="options-close"
-          type="button"
-          aria-label="Fermer"
-          class="rounded p-1 text-neutral-400 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M18 6 6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-
-      <div class="flex flex-col gap-1 p-3">
-        <!-- Export -->
-        <button
-          id="export-btn"
-          type="button"
-          class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-neutral-700 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Exporter (JSON)
-        </button>
-
-        <!-- Import -->
-        <label
-          class="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-neutral-700 hover:bg-neutral-100 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-neutral-900"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-          Importer (JSON)
-          <input id="import-input" type="file" accept=".json" class="sr-only" />
-        </label>
-
-        <hr class="my-1 border-neutral-100" />
-
-        <!-- Supprimer -->
-        <div id="delete-zone">
-          <button
-            id="delete-btn"
-            type="button"
-            class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-            </svg>
-            Supprimer tous mes livres
-          </button>
-          <div id="delete-confirm" class="hidden rounded-lg bg-red-50 p-3 mt-1">
-            <p class="mb-3 text-xs text-red-700">Cette action est irréversible. Tous vos livres et couvertures seront supprimés.</p>
-            <div class="flex gap-2">
-              <button
-                id="delete-confirm-btn"
-                type="button"
-                class="flex-1 rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
-              >
-                Oui, supprimer
-              </button>
-              <button
-                id="delete-cancel-btn"
-                type="button"
-                class="flex-1 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-              >
-                Annuler
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </dialog>
-
-    <!-- Dialog Login -->
-    <dialog
-      id="login-dialog"
-      class="w-full max-w-xs rounded-xl border border-neutral-200 bg-white p-0 shadow-xl backdrop:bg-black/50"
-      aria-labelledby="login-title"
-    >
-      <div class="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
-        <h2 id="login-title" class="text-sm font-semibold text-neutral-900">Connexion</h2>
-        <button
-          id="login-close"
-          type="button"
-          aria-label="Fermer"
-          class="rounded p-1 text-neutral-400 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M18 6 6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-      <div class="flex flex-col gap-3 p-5">
-        <label for="login-password" class="text-sm text-neutral-700">Mot de passe</label>
-        <div class="relative">
-          <input
-            type="password"
-            id="login-password"
-            autocomplete="current-password"
-            class="w-full rounded-lg border border-neutral-200 px-3 py-2 pr-10 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-          />
-          <button
-            id="toggle-password"
-            type="button"
-            aria-label="Afficher le mot de passe"
-            class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-400 hover:text-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-          >
-            <!-- Œil ouvert -->
-            <svg id="icon-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-            </svg>
-            <!-- Œil barré (caché par défaut) -->
-            <svg id="icon-eye-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="hidden">
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
-            </svg>
-          </button>
-        </div>
-        <button
-          id="login-submit"
-          type="button"
-          class="w-full rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-        >
-          Se connecter
-        </button>
-        <p id="login-error" class="hidden text-xs text-red-600" aria-live="polite"></p>
-      </div>
-    </dialog>
+    <BookDialog />
+    <LoginDialog />
+    <OptionsDialog />
   </body>
 </html>
 
 <script>
-  import type { Book } from '../types/library';
-  import { isLoggedIn, login, logout } from '../utils/auth';
-  import { exportToJson, importFromJson, clearAllBooks, deleteBook } from '../utils/api';
+  import { isLoggedIn } from '../utils/auth';
 
-  // ─── État auth ─────────────────────────────────────────────────────────────────
-
-  function applyAuthState(): void {
-    const loggedIn = isLoggedIn();
-    document.getElementById('options-btn')?.classList.toggle('hidden', !loggedIn);
-    document.getElementById('fab-add')?.classList.toggle('hidden', !loggedIn);
-    document.getElementById('login-btn')?.classList.toggle('hidden', loggedIn);
-    document.getElementById('logout-btn')?.classList.toggle('hidden', !loggedIn);
-  }
-
-  applyAuthState();
-
-  // ─── Login dialog ──────────────────────────────────────────────────────────────
-
-  const loginDialog = document.getElementById('login-dialog') as HTMLDialogElement;
-  const loginError = document.getElementById('login-error')!;
-
-  document.getElementById('login-btn')?.addEventListener('click', () => {
-    loginError.classList.add('hidden');
-    loginError.textContent = '';
-    loginDialog.showModal();
-  });
-
-  document.getElementById('login-close')?.addEventListener('click', () => loginDialog.close());
-  loginDialog.addEventListener('click', (e) => { if (e.target === loginDialog) loginDialog.close(); });
-
-  document.getElementById('login-submit')?.addEventListener('click', async () => {
-    const pwd = (document.getElementById('login-password') as HTMLInputElement).value;
-    const ok = await login(pwd);
-    if (ok) {
-      loginDialog.close();
-      window.location.reload();
-    } else {
-      loginError.textContent = 'Mot de passe incorrect';
-      loginError.classList.remove('hidden');
-    }
-  });
-
-  document.getElementById('login-password')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') document.getElementById('login-submit')?.click();
-  });
-
-  // Toggle affichage mot de passe
-  document.getElementById('toggle-password')?.addEventListener('click', () => {
-    const input = document.getElementById('login-password') as HTMLInputElement;
-    const eyeOpen = document.getElementById('icon-eye')!;
-    const eyeOff = document.getElementById('icon-eye-off')!;
-    const isHidden = input.type === 'password';
-    input.type = isHidden ? 'text' : 'password';
-    eyeOpen.classList.toggle('hidden', isHidden);
-    eyeOff.classList.toggle('hidden', !isHidden);
-    (document.getElementById('toggle-password') as HTMLButtonElement).setAttribute(
-      'aria-label',
-      isHidden ? 'Masquer le mot de passe' : 'Afficher le mot de passe',
-    );
-  });
-
-  // ─── Logout ────────────────────────────────────────────────────────────────────
-
-  document.getElementById('logout-btn')?.addEventListener('click', () => {
-    logout();
-    window.location.reload();
-  });
-
-  // ─── Book dialog ───────────────────────────────────────────────────────────────
-
-  const bookDialog = document.getElementById('book-dialog') as HTMLDialogElement;
-  let currentBookId: string | null = null;
-
-  document.addEventListener('open-book-dialog', (e) => {
-    const { book, coverUrl, isLoggedIn: loggedIn } = (e as CustomEvent<{ book: Book; coverUrl: string | null; isLoggedIn: boolean }>).detail;
-    currentBookId = book.id;
-
-    // Couverture
-    const coverImg = document.getElementById('dialog-cover-img') as HTMLImageElement;
-    const coverPlaceholder = document.getElementById('dialog-cover-placeholder')!;
-    if (coverUrl) {
-      coverImg.src = coverUrl;
-      coverImg.alt = book.title;
-      coverImg.classList.remove('hidden');
-      coverPlaceholder.classList.add('hidden');
-    } else {
-      coverImg.classList.add('hidden');
-      coverPlaceholder.classList.remove('hidden');
-      const letter = coverPlaceholder.querySelector('span')!;
-      letter.textContent = (book.title[0] ?? '?').toUpperCase();
+  document.addEventListener('astro:page-load', () => {
+    function applyAuthState(): void {
+      const loggedIn = isLoggedIn();
+      document.getElementById('options-btn')?.toggleAttribute('hidden', !loggedIn);
+      document.getElementById('fab-add')?.toggleAttribute('hidden', !loggedIn);
+      document.getElementById('login-btn')?.toggleAttribute('hidden', loggedIn);
     }
 
-    // Titre
-    document.getElementById('dialog-book-title')!.textContent = book.title;
-
-    // Sous-titre
-    const rowSubtitle = document.getElementById('dialog-row-subtitle')!;
-    const subtitleEl = document.getElementById('dialog-subtitle')!;
-    if (book.subtitle) {
-      subtitleEl.textContent = book.subtitle;
-      rowSubtitle.classList.remove('hidden');
-    } else {
-      rowSubtitle.classList.add('hidden');
-    }
-
-    // Auteurs
-    document.getElementById('dialog-authors')!.textContent = book.authors.join(', ') || '—';
-
-    // Collection
-    const rowCollection = document.getElementById('dialog-row-collection')!;
-    const collectionEl = document.getElementById('dialog-collection')!;
-    if (book.collection) {
-      collectionEl.textContent = `${book.collection.name}\u00a0· T.\u00a0${book.collection.volume}`;
-      rowCollection.classList.remove('hidden');
-    } else {
-      rowCollection.classList.add('hidden');
-    }
-
-    // EAN
-    document.getElementById('dialog-ean')!.textContent = book.ean || '—';
-
-    // Date
-    const dateEl = document.getElementById('dialog-date')!;
-    try {
-      dateEl.textContent = new Date(book.addedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-    } catch {
-      dateEl.textContent = book.addedAt;
-    }
-
-    // Actions (visibles si connecté)
-    const actionsEl = document.getElementById('dialog-actions')!;
-    if (loggedIn) {
-      (document.getElementById('dialog-edit') as HTMLAnchorElement).href = `/ajouter?id=${book.id}`;
-      actionsEl.classList.remove('hidden');
-    } else {
-      actionsEl.classList.add('hidden');
-    }
-
-    bookDialog.showModal();
-  });
-
-  document.getElementById('book-dialog-close')?.addEventListener('click', () => bookDialog.close());
-  bookDialog.addEventListener('click', (e) => { if (e.target === bookDialog) bookDialog.close(); });
-
-  document.getElementById('dialog-delete')?.addEventListener('click', async () => {
-    if (!currentBookId) return;
-    if (!confirm('Supprimer ce livre ?')) return;
-    await deleteBook(currentBookId);
-    bookDialog.close();
-    document.dispatchEvent(new CustomEvent('book-deleted', { detail: { id: currentBookId } }));
-    currentBookId = null;
-  });
-
-  // ─── Options dialog ────────────────────────────────────────────────────────────
-
-  const optionsDialog = document.getElementById('options-dialog') as HTMLDialogElement;
-  const deleteConfirm = document.getElementById('delete-confirm')!;
-
-  document.getElementById('options-btn')?.addEventListener('click', () => optionsDialog.showModal());
-  document.getElementById('options-close')?.addEventListener('click', () => optionsDialog.close());
-  optionsDialog.addEventListener('click', (e) => { if (e.target === optionsDialog) optionsDialog.close(); });
-
-  optionsDialog.addEventListener('close', () => {
-    deleteConfirm.classList.add('hidden');
-  });
-
-  // Export
-  document.getElementById('export-btn')?.addEventListener('click', async () => {
-    const json = await exportToJson();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `bibliotheque-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    optionsDialog.close();
-  });
-
-  // Import
-  document.getElementById('import-input')?.addEventListener('change', async (e) => {
-    const file = (e.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    const text = await file.text();
-    try {
-      await importFromJson(text);
-      window.location.reload();
-    } catch (err) {
-      alert((err as Error).message);
-    }
-  });
-
-  // Supprimer — étape 1
-  document.getElementById('delete-btn')?.addEventListener('click', () => {
-    deleteConfirm.classList.remove('hidden');
-  });
-
-  // Supprimer — étape 2 : confirmer
-  document.getElementById('delete-confirm-btn')?.addEventListener('click', async () => {
-    await clearAllBooks();
-    optionsDialog.close();
-    window.location.reload();
-  });
-
-  // Supprimer — annuler
-  document.getElementById('delete-cancel-btn')?.addEventListener('click', () => {
-    deleteConfirm.classList.add('hidden');
+    applyAuthState();
   });
 </script>

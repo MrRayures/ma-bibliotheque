@@ -1,17 +1,34 @@
 # CSS — Project Conventions
 
+## Folder
+
+Put all CSS file in src/styles/
+
 ## Custom Properties
 
 - Define design tokens in :root
 - Use semantic naming: --color-primary, --space-md
 - Scope overrides to components: .c-card { --card-bg: ... }
 
-## Selectors
+## Selectors BEM Naming
 
 - Class-based selectors only — no IDs for styling
-- Flat selectors preferred: .c-card-title over .c-card .title
+- Flat selectors only: `.c-card-title`, never `.c-card__title`
+- Namespace prefixes: c- component, u- utility, is-/has- state
+- One class per element — no chained selectors
 - :where() for zero-specificity resets
 - :is() for grouping related selectors
+
+## Nesting
+
+- Only for: pseudo-elements, pseudo-classes, state classes, media queries
+- Maximum 1 levels deep
+
+## Units
+
+- rem for font-size, padding, margin — never raw px (except 1px borders)
+- Unitless line-height
+- clamp() for fluid responsive values
 
 ## Layout
 

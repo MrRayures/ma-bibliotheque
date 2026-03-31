@@ -12,6 +12,7 @@ export interface Book {
   ean: string;
   collection: BookCollection | null;
   cover: string | null;
+  openLibraryUrl: string | null;
   addedAt: string;
 }
 

@@ -1,0 +1,111 @@
+/* Composants boutons */
+
+/* ─── Base ───────────────────────────────────────────────────────────────────── */
+
+.c-btn {
+  @apply border-2 border-current inline-flex items-center justify-center rounded-full transition font-semibold;
+
+  &:hover {
+    @apply cursor-pointer;
+  }
+}
+
+/* ─── Variants ───────────────────────────────────────────────────────────────── */
+
+.c-btn--primary {
+  @apply bg-primary border-primary text-text;
+
+  &:hover {
+    @apply bg-primary;
+  }
+}
+
+.c-btn--primary-outline {
+  @apply bg-white border-primary text-text;
+
+  &:hover,
+  &[aria-current='page'] {
+    @apply bg-primary text-text;
+  }
+}
+
+.c-btn--secondary {
+  @apply bg-secondary text-white border-secondary;
+
+  &:hover {
+    @apply bg-secondary/50;
+  }
+}
+
+.c-btn--secondary-outline {
+  @apply border-2 bg-white border-secondary text-text;
+
+  &:hover {
+    @apply bg-secondary text-white border-secondary;
+  }
+}
+
+.c-btn--ghost {
+  @apply text-text bg-white border-transparent;
+
+  &:hover {
+    @apply bg-secondary text-white border-secondary;
+  }
+}
+
+.c-btn--alert {
+  @apply bg-alert border-alert text-text;
+
+  &:hover {
+    @apply bg-alert/50;
+  }
+}
+
+.c-btn--alert-outline {
+  @apply border-alert bg-white;
+
+  &:hover {
+    @apply bg-alert text-text;
+  }
+}
+
+.c-btn--letter {
+  @apply border-2 bg-white border-secondary text-text px-1 py-1 text-sm h-8 w-8 font-semibold;
+
+  &:not([aria-disabled='true']) {
+    &:hover,
+    &.is-active {
+      @apply bg-secondary text-white border-secondary;
+    }
+  }
+
+  &[aria-disabled='true'] {
+    @apply opacity-20 font-normal;
+  }
+}
+
+/* ─── Sizes (with text) ──────────────────────────────────────────────────────── */
+.c-btn--sm {
+  @apply gap-2 px-4 py-1 text-sm min-h-8 font-medium;
+}
+
+.c-btn--md {
+  @apply gap-2 px-4 py-1 text-base min-h-10;
+}
+
+.c-btn--lg {
+  @apply gap-2 px-4 py-1 text-lg min-h-12;
+}
+
+/* ─── Sizes (icon-only) ──────────────────────────────────────────────────────── */
+.c-btn--icon-sm {
+  @apply w-8 h-8;
+}
+
+.c-btn--icon-md {
+  @apply w-10 h-10;
+}
+
+.c-btn--icon-lg {
+  @apply w-12 h-12;
+}

@@ -1,1 +1,29 @@
 @import 'tailwindcss';
+@import './alert.css';
+@import './bookcard.css';
+@import './buttons.css';
+@import './dialogs.css';
+@import './fonts.css';
+@import './inputs.css';
+
+@theme {
+  --font-sans: 'Fredoka', sans-serif;
+
+  --color-primary: #fbe78b;
+  --color-secondary: #2d2d2d;
+  --color-tertiary: #febfcb;
+  --color-alert: #fe8d5c;
+  --color-success: #3ebab9;
+  --color-bg: #fffcf1;
+  --color-border: #eef0fb;
+  --color-text: #2d2d2d;
+  --color-text-light: #666666;
+}
+
+body {
+  @apply text-text bg-bg text-base;
+}
+
+:focus-visible {
+  @apply focus-visible:outline-2 focus-visible:outline-offset-2;
+}

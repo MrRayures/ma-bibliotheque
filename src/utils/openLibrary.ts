@@ -1,6 +1,7 @@
 import type { Book } from '../types/library';
 
 interface OpenLibraryBook {
+  url?: string;
   title?: string;
   subtitle?: string;
   authors?: Array<{ name: string }>;
@@ -12,6 +13,7 @@ export interface LookupResult {
   subtitle: string | null;
   authors: string[];
   coverUrl: string | null;
+  openLibraryUrl: string | null;
   ean: string;
 }
 
@@ -36,6 +38,7 @@ export async function lookupByEan(ean: string): Promise<LookupResult | null> {
         subtitle: book.subtitle ?? null,
         authors: book.authors?.map((a) => a.name) ?? [],
         coverUrl: book.cover?.large ?? book.cover?.medium ?? null,
+        openLibraryUrl: book.url ?? null,
         ean,
       }
     : null;
@@ -85,6 +88,7 @@ export function buildBook(
           }
         : null,
     cover: null,
+    openLibraryUrl: result.openLibraryUrl,
     addedAt: new Date().toISOString().split('T')[0] ?? '',
   };
 }

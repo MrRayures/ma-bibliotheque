@@ -1,0 +1,140 @@
+{
+  "books": [
+    {
+      "id": "a1b2c3d4-0001-0000-0000-000000000001",
+      "title": "Akira",
+      "subtitle": null,
+      "authors": ["Katsuhiro Otomo"],
+      "ean": "9782723428071",
+      "collection": { "name": "Akira", "slug": "akira", "volume": 1 },
+      "openLibraryUrl": "https://openlibrary.org/isbn/9782723428071",
+      "cover": null,
+      "addedAt": "2024-11-10T10:00:00.000Z"
+    },
+    {
+      "id": "a1b2c3d4-0001-0000-0000-000000000002",
+      "title": "Akira",
+      "subtitle": null,
+      "authors": ["Katsuhiro Otomo"],
+      "ean": "9782723428088",
+      "collection": { "name": "Akira", "slug": "akira", "volume": 2 },
+      "openLibraryUrl": "https://openlibrary.org/isbn/9782723428088",
+      "cover": null,
+      "addedAt": "2024-11-10T10:05:00.000Z"
+    },
+    {
+      "id": "a1b2c3d4-0001-0000-0000-000000000003",
+      "title": "Akira",
+      "subtitle": null,
+      "authors": ["Katsuhiro Otomo"],
+      "ean": "9782723428095",
+      "collection": { "name": "Akira", "slug": "akira", "volume": 3 },
+      "openLibraryUrl": "https://openlibrary.org/isbn/9782723428095",
+      "cover": null,
+      "addedAt": "2024-11-10T10:10:00.000Z"
+    },
+    {
+      "id": "a1b2c3d4-0001-0000-0000-000000000004",
+      "title": "Akira",
+      "subtitle": null,
+      "authors": ["Katsuhiro Otomo"],
+      "ean": "9782723428101",
+      "collection": { "name": "Akira", "slug": "akira", "volume": 4 },
+      "openLibraryUrl": "https://openlibrary.org/isbn/9782723428101",
+      "cover": null,
+      "addedAt": "2024-11-10T10:15:00.000Z"
+    },
+    {
+      "id": "a1b2c3d4-0001-0000-0000-000000000005",
+      "title": "Akira",
+      "subtitle": null,
+      "authors": ["Katsuhiro Otomo"],
+      "ean": "9782723428118",
+      "collection": { "name": "Akira", "slug": "akira", "volume": 5 },
+      "openLibraryUrl": "https://openlibrary.org/isbn/9782723428118",
+      "cover": null,
+      "addedAt": "2024-11-10T10:20:00.000Z"
+    },
+    {
+      "id": "a1b2c3d4-0001-0000-0000-000000000006",
+      "title": "Akira",
+      "subtitle": null,
+      "authors": ["Katsuhiro Otomo"],
+      "ean": "9782723428125",
+      "collection": { "name": "Akira", "slug": "akira", "volume": 6 },
+      "openLibraryUrl": "https://openlibrary.org/isbn/9782723428125",
+      "cover": null,
+      "addedAt": "2024-11-10T10:25:00.000Z"
+    },
+    {
+      "id": "a1b2c3d4-0002-0000-0000-000000000001",
+      "title": "Berserk",
+      "subtitle": null,
+      "authors": ["Kentaro Miura"],
+      "ean": "9782756005775",
+      "collection": { "name": "Berserk", "slug": "berserk", "volume": 1 },
+      "openLibraryUrl": "https://openlibrary.org/isbn/9782756005775",
+      "cover": null,
+      "addedAt": "2024-11-15T14:00:00.000Z"
+    },
+    {
+      "id": "a1b2c3d4-0002-0000-0000-000000000002",
+      "title": "Berserk",
+      "subtitle": null,
+      "authors": ["Kentaro Miura"],
+      "ean": "9782756005782",
+      "collection": { "name": "Berserk", "slug": "berserk", "volume": 2 },
+      "openLibraryUrl": "https://openlibrary.org/isbn/9782756005782",
+      "cover": null,
+      "addedAt": "2024-11-15T14:05:00.000Z"
+    },
+    {
+      "id": "a1b2c3d4-0003-0000-0000-000000000001",
+      "title": "Tintin au Tibet",
+      "subtitle": null,
+      "authors": ["Hergé"],
+      "ean": "9782203001206",
+      "collection": {
+        "name": "Les Aventures de Tintin",
+        "slug": "les-aventures-de-tintin",
+        "volume": 20
+      },
+      "openLibraryUrl": "https://openlibrary.org/isbn/9782203001206",
+      "cover": "/demo/tintin-au-tibet.jpg",
+      "addedAt": "2024-12-01T09:00:00.000Z"
+    },
+    {
+      "id": "a1b2c3d4-0004-0000-0000-000000000001",
+      "title": "Watchmen",
+      "subtitle": null,
+      "authors": ["Alan Moore", "Dave Gibbons"],
+      "ean": "9782845655065",
+      "collection": null,
+      "openLibraryUrl": "https://openlibrary.org/isbn/9782845655065",
+      "cover": "/demo/watchmen.jpg",
+      "addedAt": "2025-01-05T11:00:00.000Z"
+    },
+    {
+      "id": "a1b2c3d4-0005-0000-0000-000000000001",
+      "title": "L'Incal",
+      "subtitle": null,
+      "authors": ["Alejandro Jodorowsky", "Mœbius"],
+      "ean": "9782731612530",
+      "collection": null,
+      "openLibraryUrl": "https://openlibrary.org/isbn/9782731612530",
+      "cover": null,
+      "addedAt": "2025-01-20T16:30:00.000Z"
+    },
+    {
+      "id": "a1b2c3d4-0006-0000-0000-000000000001",
+      "title": "One Piece",
+      "subtitle": null,
+      "authors": ["Eiichiro Oda"],
+      "ean": "9782723440080",
+      "collection": { "name": "One Piece", "slug": "one-piece", "volume": 1 },
+      "openLibraryUrl": "https://openlibrary.org/isbn/9782723440080",
+      "cover": "/demo/one-piece-1.jpg",
+      "addedAt": "2025-02-03T08:00:00.000Z"
+    }
+  ]
+}

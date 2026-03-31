@@ -1,15 +1,15 @@
 const AUTH_KEY = 'auth_token';
 
 export function getAuthToken(): string | null {
-  return sessionStorage.getItem(AUTH_KEY);
+  return localStorage.getItem(AUTH_KEY);
 }
 
 export function setAuthToken(token: string): void {
-  sessionStorage.setItem(AUTH_KEY, token);
+  localStorage.setItem(AUTH_KEY, token);
 }
 
 export function clearAuthToken(): void {
-  sessionStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(AUTH_KEY);
 }
 
 export function isLoggedIn(): boolean {

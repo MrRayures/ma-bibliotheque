@@ -2,8 +2,7 @@ import type { Book } from '../types/library';
 
 export function createBookCard(book: Book, coverUrl: string | null): HTMLElement {
   const article = document.createElement('article');
-  article.className =
-    'relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-neutral-800 transition-transform hover:scale-[1.02] hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900';
+  article.className = 'c-bookcard';
   article.setAttribute('aria-label', book.title);
   article.tabIndex = 0;
 
@@ -14,13 +13,13 @@ export function createBookCard(book: Book, coverUrl: string | null): HTMLElement
     img.width = 200;
     img.height = 200;
     img.loading = 'lazy';
-    img.className = 'h-full w-full object-cover';
+    img.className = 'c-bookcard__cover';
     article.appendChild(img);
   } else {
     const placeholder = document.createElement('div');
-    placeholder.className = 'flex h-full w-full items-center justify-center';
+    placeholder.className = 'c-bookcard__placeholder';
     const letter = document.createElement('span');
-    letter.className = 'text-3xl font-bold text-neutral-500';
+    letter.className = 'c-bookcard__placeholder-letter';
     letter.setAttribute('aria-hidden', 'true');
     letter.textContent = (book.title[0] ?? '?').toUpperCase();
     placeholder.appendChild(letter);
@@ -28,17 +27,16 @@ export function createBookCard(book: Book, coverUrl: string | null): HTMLElement
   }
 
   const overlay = document.createElement('div');
-  overlay.className =
-    'absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-2.5 pb-2.5 pt-10';
+  overlay.className = 'c-bookcard__overlay';
 
   const titleEl = document.createElement('p');
-  titleEl.className = 'line-clamp-2 text-xs font-semibold leading-snug text-white';
+  titleEl.className = 'c-bookcard__title';
   titleEl.textContent = book.title;
   overlay.appendChild(titleEl);
 
   if (book.collection) {
     const meta = document.createElement('p');
-    meta.className = 'mt-0.5 truncate text-[10px] leading-tight text-white/70';
+    meta.className = 'c-bookcard__meta';
     meta.textContent = `${book.collection.name}\u00a0· T.\u00a0${book.collection.volume}`;
     overlay.appendChild(meta);
   }
