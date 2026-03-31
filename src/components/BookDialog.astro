@@ -1,0 +1,169 @@
+---
+import Button from './Button.astro';
+import Icon from './Icon.astro';
+---
+
+<dialog
+  id="book-dialog"
+  class="c-dialog c-dialog--book"
+  aria-labelledby="dialog-book-title"
+>
+  <div class="c-book-dialog__layout">
+    <!-- Cover -->
+    <div class="c-book-dialog__cover">
+      <img id="dialog-cover-img" src="" alt="" class="hidden h-full w-full object-contain bg-primary" />
+      <div id="dialog-cover-placeholder" class="absolute bg-primary text-text inset-0 hidden items-center justify-center">
+        <span class="text-5xl font-bold text-text"></span>
+      </div>
+      <Button id="book-dialog-close" variant="ghost" size="sm" aria-label="Fermer" class="fixed top-2 right-2 z-10 bg-white/80 backdrop-blur-sm rounded-full">
+        <Icon name="close" size={16} slot="icon" />
+      </Button>
+    </div>
+
+    <!-- Contenu scrollable -->
+    <div class="c-book-dialog__content">
+      <h2 id="dialog-book-title" class="text-2xl font-bold leading-snug px-5 pt-4 pb-2"></h2>
+
+      <dl class="flex flex-col gap-3 px-5 pb-4 text-sm">
+        <div id="dialog-row-subtitle" class="hidden">
+          <dd id="dialog-subtitle" class="italic text-text-light"></dd>
+        </div>
+        <div>
+          <dt class="mb-0.5 text-sm font-semibold uppercase tracking-wide text-text-light">Auteur(s)</dt>
+          <dd id="dialog-authors"></dd>
+        </div>
+        <div id="dialog-row-collection" class="hidden">
+          <dt class="mb-0.5 text-sm font-semibold uppercase tracking-wide text-text-light">Collection</dt>
+          <dd id="dialog-collection"></dd>
+        </div>
+        <div>
+          <dt class="mb-0.5 text-sm font-semibold uppercase tracking-wide text-text-light">ISBN/EAN</dt>
+          <dd id="dialog-ean" class="font-mono"></dd>
+        </div>
+        <div>
+          <dt class="mb-0.5 text-sm font-semibold uppercase tracking-wide text-text-light">Ajouté le</dt>
+          <dd id="dialog-date"></dd>
+        </div>
+        <div id="dialog-row-openlibrary" class="hidden">
+          <dt class="mb-0.5 text-sm font-semibold uppercase tracking-wide text-text-light">Open Library</dt>
+          <dd>
+            <a
+              id="dialog-openlibrary"
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="c-btn c-btn--ghost c-btn--sm px-0"
+            >
+              Voir la fiche
+              <Icon name="external" size={11} />
+            </a>
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- Actions sticky bottom -->
+    <div id="dialog-actions" class="c-book-dialog__actions hidden">
+      <Button id="dialog-edit" href="#" variant="secondary-outline" size="md" iconPosition="left" class="flex-1">
+        <Icon name="edit" size={14} slot="icon" />
+        Modifier
+      </Button>
+      <Button id="dialog-delete" variant="alert" size="md" iconPosition="left" class="flex-1">
+        <Icon name="delete" size={14} slot="icon" />
+        Supprimer
+      </Button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  import type { Book } from '../types/library';
+  import { deleteBook } from '../utils/api';
+
+  document.addEventListener('astro:page-load', () => {
+    const dialog = document.getElementById('book-dialog') as HTMLDialogElement;
+    let currentBookId: string | null = null;
+
+    document.addEventListener('open-book-dialog', (e) => {
+      const { book, coverUrl, isLoggedIn } = (e as CustomEvent<{
+        book: Book;
+        coverUrl: string | null;
+        isLoggedIn: boolean;
+      }>).detail;
+      currentBookId = book.id;
+
+      const coverImg = document.getElementById('dialog-cover-img') as HTMLImageElement;
+      const coverPlaceholder = document.getElementById('dialog-cover-placeholder')!;
+      if (coverUrl) {
+        coverImg.src = coverUrl;
+        coverImg.alt = book.title;
+        coverImg.classList.remove('hidden');
+        coverPlaceholder.classList.add('hidden');
+      } else {
+        coverImg.classList.add('hidden');
+        coverPlaceholder.classList.remove('hidden');
+        coverPlaceholder.classList.add('flex');
+        coverPlaceholder.querySelector('span')!.textContent = (book.title[0] ?? '?').toUpperCase();
+      }
+
+      document.getElementById('dialog-book-title')!.textContent = book.title;
+
+      const rowSubtitle = document.getElementById('dialog-row-subtitle')!;
+      document.getElementById('dialog-subtitle')!.textContent = book.subtitle ?? '';
+      rowSubtitle.classList.toggle('hidden', !book.subtitle);
+
+      document.getElementById('dialog-authors')!.textContent = book.authors.join(', ') || '—';
+
+      const rowCollection = document.getElementById('dialog-row-collection')!;
+      if (book.collection) {
+        document.getElementById('dialog-collection')!.textContent =
+          `${book.collection.name}\u00a0· T.\u00a0${book.collection.volume}`;
+        rowCollection.classList.remove('hidden');
+      } else {
+        rowCollection.classList.add('hidden');
+      }
+
+      document.getElementById('dialog-ean')!.textContent = book.ean || '—';
+
+      const dateEl = document.getElementById('dialog-date')!;
+      try {
+        dateEl.textContent = new Date(book.addedAt).toLocaleDateString('fr-FR', {
+          day: 'numeric', month: 'long', year: 'numeric',
+        });
+      } catch {
+        dateEl.textContent = book.addedAt;
+      }
+
+      const rowOl = document.getElementById('dialog-row-openlibrary')!;
+      const linkOl = document.getElementById('dialog-openlibrary') as HTMLAnchorElement;
+      if (book.openLibraryUrl) {
+        linkOl.href = book.openLibraryUrl;
+        rowOl.classList.remove('hidden');
+      } else {
+        rowOl.classList.add('hidden');
+      }
+
+      const actionsEl = document.getElementById('dialog-actions')!;
+      if (isLoggedIn) {
+        (document.getElementById('dialog-edit') as HTMLAnchorElement).href = `/ajouter?id=${book.id}`;
+        actionsEl.classList.remove('hidden');
+      } else {
+        actionsEl.classList.add('hidden');
+      }
+
+      dialog.showModal();
+    });
+
+    document.getElementById('book-dialog-close')?.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+
+    document.getElementById('dialog-delete')?.addEventListener('click', async () => {
+      if (!currentBookId) return;
+      if (!confirm('Supprimer ce livre ?')) return;
+      await deleteBook(currentBookId);
+      dialog.close();
+      document.dispatchEvent(new CustomEvent('book-deleted', { detail: { id: currentBookId } }));
+      currentBookId = null;
+    });
+  });
+</script>

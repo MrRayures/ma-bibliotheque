@@ -1,0 +1,17 @@
+/* Composants inputs */
+
+.c-input,
+.c-select,
+[class*='c-input--'] {
+  @apply w-full bg-white h-14 rounded-full border-2 border-secondary px-3 py-2 text-base text-text placeholder:text-text-light;
+}
+
+.c-input--readonly {
+}
+
+.c-input--search {
+  @apply py-2.5 pl-10 pr-4 h-12;
+}
+
+.c-select {
+}

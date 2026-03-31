@@ -1,0 +1,255 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SearchBar from '../components/SearchBar.astro';
+import RenameDialog from '../components/RenameDialog.astro';
+import Icon from '../components/Icon.astro';
+---
+
+<BaseLayout
+  title="Collections — Ma Bibliothèque"
+  description="Vue par collections de ma bibliothèque personnelle"
+>
+  <div class="mx-auto max-w-5xl px-4 pt-3 pb-8">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold ">Collections</h1>
+      <p id="collection-count" class="text-sm text-text-light" aria-live="polite"></p>
+    </div>
+
+    <div class="sticky top-15 z-10 -mx-4 bg-bg px-4 pb-3 pt-2">
+      <SearchBar placeholder="Rechercher une collection..." />
+    </div>
+
+    <div id="collections-container" class="mt-6 flex flex-col gap-10" style="--card-size: clamp(6.5rem, 22vw, 10rem);"></div>
+    <div id="collections-loading" class="mt-6 flex flex-col gap-10" style="--card-size: clamp(6.5rem, 22vw, 10rem);" aria-label="Chargement en cours" aria-busy="true">
+      {Array.from({ length: 2 }).map(() => (
+        <div>
+          <div class="mb-4">
+            <div class="mb-2 h-5 w-44 animate-pulse rounded bg-neutral-200"></div>
+            <div class="h-3 w-16 animate-pulse rounded bg-neutral-200"></div>
+          </div>
+          <div class="grid grid-cols-[repeat(auto-fill,minmax(var(--card-size),1fr))] gap-3">
+            {Array.from({ length: 6 }).map(() => (
+              <div class="aspect-square animate-pulse rounded-lg bg-neutral-200"></div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <p id="collections-empty" class="mt-8 text-sm text-text-light" hidden>
+      Aucune collection pour l'instant.
+    </p>
+  </div>
+
+  <RenameDialog />
+
+  <template id="tpl-icon-list"><Icon name="list-view" size={16} /></template>
+  <template id="tpl-icon-grid"><Icon name="grid-view" size={16} /></template>
+  <template id="tpl-icon-edit"><Icon name="edit" size={16} /></template>
+</BaseLayout>
+
+<script>
+  import type { Book } from '../types/library';
+  import { getAllBooks, getEffectiveCoverUrl } from '../utils/api';
+  import { isLoggedIn } from '../utils/auth';
+  import type { ViewMode } from '../utils/books';
+  import { getCollectionViewMode, groupByCollection, setCollectionViewMode } from '../utils/books';
+  import { createBookListItem } from '../utils/render';
+
+  document.addEventListener('astro:page-load', async () => {
+    const UL_GRID    = 'grid grid-cols-[repeat(auto-fill,minmax(var(--card-size),1fr))] gap-3';
+    const UL_COMPACT = 'flex gap-3 overflow-x-auto pb-2';
+
+    function cloneIcon(id: string): Node {
+      const tpl = document.getElementById(id) as HTMLTemplateElement;
+      return tpl.content.cloneNode(true);
+    }
+
+    function hasMultipleRows(ul: HTMLUListElement): boolean {
+      const first = ul.querySelector<HTMLElement>('li');
+      const last = ul.querySelector<HTMLElement>('li:last-child');
+      if (!first || !last || first === last) return false;
+      return first.offsetTop !== last.offsetTop;
+    }
+
+    function updateToggleVisibility(section: HTMLElement): void {
+      const btn = section.querySelector<HTMLButtonElement>('[data-view-toggle]');
+      const ul = section.querySelector<HTMLUListElement>('ul[role="list"]');
+      if (!btn || !ul) return;
+
+      const wasCompact = ul.classList.contains('overflow-x-auto');
+      if (wasCompact) {
+        ul.className = UL_GRID;
+        ul.querySelectorAll<HTMLElement>('li').forEach((li) => {
+          li.classList.remove('shrink-0');
+          li.style.width = '';
+        });
+      }
+
+      const visible = hasMultipleRows(ul);
+      btn.hidden = !visible;
+
+      if (wasCompact && visible) {
+        ul.className = UL_COMPACT;
+        ul.querySelectorAll<HTMLElement>('li').forEach((li) => {
+          li.classList.add('shrink-0');
+          li.style.width = 'var(--card-size)';
+        });
+      }
+
+      if (!visible && wasCompact) {
+        const slug = section.dataset.collectionSlug ?? '';
+        setCollectionViewMode(slug, 'grid');
+        applyModeToSection('grid', section, btn);
+      }
+    }
+
+    function applyModeToSection(mode: ViewMode, section: HTMLElement, btn: HTMLButtonElement): void {
+      const ul = section.querySelector<HTMLUListElement>('ul[role="list"]');
+      if (!ul) return;
+
+      if (mode === 'compact') {
+        ul.className = UL_COMPACT;
+        ul.querySelectorAll<HTMLElement>('li').forEach((li) => {
+          li.classList.add('shrink-0');
+          li.style.width = 'var(--card-size)';
+        });
+        btn.replaceChildren(cloneIcon('tpl-icon-grid'));
+        btn.setAttribute('aria-label', 'Passer en mode grille');
+      } else {
+        ul.className = UL_GRID;
+        ul.querySelectorAll<HTMLElement>('li').forEach((li) => {
+          li.classList.remove('shrink-0');
+          li.style.width = '';
+        });
+        btn.replaceChildren(cloneIcon('tpl-icon-list'));
+        btn.setAttribute('aria-label', 'Passer en mode compact');
+      }
+    }
+
+    function createCollectionSection(name: string, slug: string, books: Book[], loggedIn: boolean): HTMLElement {
+      const section = document.createElement('section');
+      section.dataset.collection = '';
+      section.dataset.collectionSlug = slug;
+      section.dataset.search = name.toLowerCase();
+
+      const header = document.createElement('div');
+      header.className = 'mb-4';
+
+      const row = document.createElement('div');
+      row.className = 'flex items-center gap-2';
+
+      const heading = document.createElement('h2');
+      heading.className = 'text-2xl font-bold';
+      heading.textContent = name;
+      row.appendChild(heading);
+
+      if (loggedIn) {
+        const renameBtn = document.createElement('button');
+        renameBtn.type = 'button';
+        renameBtn.setAttribute('aria-label', `Renommer ${name}`);
+        renameBtn.className = 'c-btn c-btn--ghost c-btn--icon-sm';
+        renameBtn.appendChild(cloneIcon('tpl-icon-edit'));
+        renameBtn.addEventListener('click', () => {
+          document.dispatchEvent(new CustomEvent('open-rename-dialog', { detail: { slug, name } }));
+        });
+        row.appendChild(renameBtn);
+      }
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.type = 'button';
+      toggleBtn.dataset.viewToggle = '';
+      toggleBtn.className = 'c-btn c-btn--secondary-outline c-btn--icon-sm ml-auto';
+      toggleBtn.appendChild(cloneIcon('tpl-icon-list'));
+      toggleBtn.setAttribute('aria-label', 'Passer en mode compact');
+      toggleBtn.addEventListener('click', () => {
+        const currentMode = getCollectionViewMode(slug);
+        const nextMode: ViewMode = currentMode === 'grid' ? 'compact' : 'grid';
+        setCollectionViewMode(slug, nextMode);
+        applyModeToSection(nextMode, section, toggleBtn);
+      });
+      row.appendChild(toggleBtn);
+
+      header.appendChild(row);
+
+      const subtitle = document.createElement('p');
+      subtitle.className = 'mt-0.5 text-sm text-text-light';
+      subtitle.textContent = `${books.length} tome${books.length > 1 ? 's' : ''}`;
+      header.appendChild(subtitle);
+
+      section.appendChild(header);
+      return section;
+    }
+
+    // ─── Init ──────────────────────────────────────────────────────────────────────
+
+    const books = await getAllBooks();
+    const collections = groupByCollection(books);
+    const container = document.getElementById('collections-container');
+    const loading = document.getElementById('collections-loading');
+    const empty = document.getElementById('collections-empty');
+    const countEl = document.getElementById('collection-count');
+    const loggedIn = isLoggedIn();
+
+    if (!container) return;
+
+    if (collections.size === 0) {
+      if (loading) loading.hidden = true;
+      if (empty) empty.hidden = false;
+      return;
+    }
+
+    for (const [slug, collectionBooks] of collections) {
+      const name = collectionBooks[0]?.collection?.name ?? '';
+      const section = createCollectionSection(name, slug, collectionBooks, loggedIn);
+
+      const grid = document.createElement('ul');
+      grid.className = UL_GRID;
+      grid.setAttribute('role', 'list');
+
+      for (const book of collectionBooks) {
+        const coverUrl = getEffectiveCoverUrl(book);
+        const li = createBookListItem(book, coverUrl, book.title.toLowerCase(), loggedIn);
+        li.removeAttribute('data-search');
+        grid.appendChild(li);
+      }
+
+      section.appendChild(grid);
+      container.appendChild(section);
+
+      // Appliquer le mode sauvegardé pour cette collection (compact par défaut)
+      const savedMode = getCollectionViewMode(slug);
+      const btn = section.querySelector<HTMLButtonElement>('[data-view-toggle]');
+      if (btn) applyModeToSection(savedMode, section, btn);
+    }
+
+    document.addEventListener('book-deleted', (e) => {
+      const { id } = (e as CustomEvent<{ id: string }>).detail;
+      const li = container.querySelector(`li[data-book-id="${id}"]`);
+      const section = li?.closest('section');
+      li?.remove();
+      if (section && section.querySelectorAll('li').length === 0) section.remove();
+      const remaining = container.querySelectorAll('section').length;
+      if (countEl) countEl.textContent = remaining > 0 ? `${remaining} collection${remaining > 1 ? 's' : ''}` : '';
+    });
+
+    if (loading) loading.hidden = true;
+    if (countEl) countEl.textContent = `${collections.size} collection${collections.size > 1 ? 's' : ''}`;
+
+    function refreshAllToggles(): void {
+      container.querySelectorAll<HTMLElement>('section[data-collection]').forEach(updateToggleVisibility);
+    }
+
+    refreshAllToggles();
+
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(refreshAllToggles, 150);
+    });
+
+    document.addEventListener('collection-renamed', () => {
+      window.location.reload();
+    });
+  });
+</script>

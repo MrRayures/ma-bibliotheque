@@ -1,0 +1,215 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SearchBar from '../components/SearchBar.astro';
+import Button from '../components/Button.astro';
+import Icon from '../components/Icon.astro';
+---
+
+<BaseLayout title="Livres — Ma Bibliothèque">
+  <div class="mx-auto max-w-5xl px-4 pt-3 pb-8">
+    <div class=" flex items-center justify-between">
+      <h1 class="text-2xl font-bold ">Livres</h1>
+      <p id="book-count" class="text-sm text-text-light" aria-live="polite"></p>
+    </div>
+
+    <div class="sticky top-15 z-10 -mx-4 bg-bg px-4 pb-3 pt-2">
+      <SearchBar placeholder="Rechercher par titre ou auteur..." />
+      <nav
+        id="letter-nav"
+        aria-label="Navigation par lettre"
+        class="mt-2 pb-1.5 hidden overflow-x-auto"
+      ></nav>
+    </div>
+
+    <div id="book-grid" class="mt-4 space-y-8" style="--card-size: clamp(6.5rem, 22vw, 10rem);"></div>
+
+    <div
+      id="books-loading"
+      class="mt-6 grid grid-cols-[repeat(auto-fill,minmax(clamp(6.5rem,22vw,10rem),1fr))] gap-3"
+      aria-label="Chargement en cours"
+      aria-busy="true"
+    >
+      {Array.from({ length: 10 }).map(() => (
+        <div class="aspect-square animate-pulse rounded-lg bg-neutral-200"></div>
+      ))}
+    </div>
+    <div id="books-empty" class="mt-16 flex flex-col items-center gap-4 text-center" hidden>
+      <p class="text-sm text-text-light">Aucun livre pour l'instant.</p>
+      <Button href="/ajouter" variant="primary" size="md" iconPosition="left">
+        <Icon name="add" size={16} slot="icon" />
+        Ajoutez votre premier livre
+      </Button>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { getAllBooks, getEffectiveCoverUrl } from '../utils/api';
+  import { isLoggedIn } from '../utils/auth';
+  import { groupByLetter } from '../utils/books';
+  import { createBookListItem } from '../utils/render';
+
+  document.addEventListener('astro:page-load', async () => {
+    function updateSectionVisibility(): void {
+      document.querySelectorAll<HTMLElement>('[data-letter-section]').forEach((section) => {
+        const hasVisible = [...section.querySelectorAll<HTMLElement>('[data-search]')].some(
+          (item) => !item.hidden,
+        );
+        section.hidden = !hasVisible;
+
+        const letter = section.dataset.letterSection!;
+        const navLink = document.querySelector<HTMLElement>(`[data-letter-nav="${letter}"]`);
+        if (navLink) {
+          navLink.classList.toggle('opacity-30', !hasVisible);
+          navLink.classList.toggle('pointer-events-none', !hasVisible);
+        }
+      });
+    }
+
+    const books = await getAllBooks();
+    const container = document.getElementById('book-grid');
+    const loading = document.getElementById('books-loading');
+    const empty = document.getElementById('books-empty');
+    const count = document.getElementById('book-count');
+    const nav = document.getElementById('letter-nav');
+    const loggedIn = isLoggedIn();
+
+    if (!container) return;
+
+    if (books.length === 0) {
+      if (loading) loading.hidden = true;
+      if (empty) {
+        empty.hidden = false;
+        const addFirstLink = empty.querySelector('a[href="/ajouter"]') as HTMLElement | null;
+        if (addFirstLink) addFirstLink.hidden = !loggedIn;
+      }
+      return;
+    }
+
+    const groups = groupByLetter(books);
+
+    const sortedLetters = [...groups.keys()].sort((a, b) => {
+      if (a === '#') return 1;
+      if (b === '#') return -1;
+      return a.localeCompare(b, 'fr');
+    });
+
+    // Navigation par lettre — toutes les lettres A–Z affichées
+    if (nav) {
+      nav.classList.remove('hidden');
+      const inner = document.createElement('div');
+      inner.className = 'flex gap-1 min-w-max';
+
+      const allLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+      for (const letter of allLetters) {
+        const hasBooks = groups.has(letter);
+        if (hasBooks) {
+          const a = document.createElement('a');
+          a.href = `#lettre-${letter}`;
+          a.textContent = letter;
+          a.dataset.letterNav = letter;
+          a.className =
+            'c-btn c-btn--letter';
+          inner.appendChild(a);
+        } else {
+          const span = document.createElement('span');
+          span.textContent = letter;
+          span.setAttribute('aria-disabled', 'true');
+          span.className = 'c-btn c-btn--letter cursor-default select-none';
+          inner.appendChild(span);
+        }
+      }
+
+      nav.appendChild(inner);
+    }
+
+    // Sections par lettre
+    const fragment = document.createDocumentFragment();
+    for (const letter of sortedLetters) {
+      const section = document.createElement('section');
+      section.dataset.letterSection = letter;
+
+      const heading = document.createElement('h2');
+      heading.id = `lettre-${letter}`;
+      heading.className =
+        'mb-3 font-semibold uppercase tracking-widest scroll-mt-20';
+      heading.textContent = letter;
+      section.appendChild(heading);
+
+      const ul = document.createElement('ul');
+      ul.className = 'grid grid-cols-[repeat(auto-fill,minmax(var(--card-size),1fr))] gap-3';
+      ul.setAttribute('role', 'list');
+      ul.setAttribute('aria-label', `Livres — ${letter}`);
+
+      for (const book of groups.get(letter)!) {
+        const coverUrl = getEffectiveCoverUrl(book);
+        const li = createBookListItem(book, coverUrl, `${book.title} ${book.authors.join(' ')}`, loggedIn);
+        ul.appendChild(li);
+      }
+
+      section.appendChild(ul);
+      fragment.appendChild(section);
+    }
+
+    container.appendChild(fragment);
+    if (loading) loading.hidden = true;
+    if (count) count.textContent = `${books.length} livre${books.length > 1 ? 's' : ''}`;
+
+    // Indicateur de lettre active au scroll
+    function setActiveLetter(letter: string): void {
+      nav?.querySelectorAll<HTMLElement>('[data-letter-nav]').forEach((el) => {
+        el.classList.toggle('is-active', el.dataset.letterNav === letter);
+      });
+      const active = nav?.querySelector<HTMLElement>(`[data-letter-nav="${letter}"]`);
+      active?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const letter = (entry.target as HTMLElement).dataset.letterSection!;
+            setActiveLetter(letter);
+            break;
+          }
+        }
+      },
+      { rootMargin: '-80px 0px -70% 0px', threshold: 0 },
+    );
+
+    container.querySelectorAll<HTMLElement>('[data-letter-section]').forEach((section) => {
+      observer.observe(section);
+    });
+
+    nav?.addEventListener('click', (e) => {
+      const target = (e.target as HTMLElement).closest<HTMLElement>('[data-letter-nav]');
+      if (target?.dataset.letterNav) setActiveLetter(target.dataset.letterNav);
+    });
+
+    // Masquer les sections vides lors d'une recherche
+    document.getElementById('search-input')?.addEventListener('input', () => {
+      updateSectionVisibility();
+    });
+
+    // Suppression d'un livre
+    document.addEventListener('book-deleted', (e) => {
+      const { id } = (e as CustomEvent<{ id: string }>).detail;
+      const li = container.querySelector(`li[data-book-id="${id}"]`);
+      if (li) {
+        const section = li.closest<HTMLElement>('[data-letter-section]');
+        li.remove();
+
+        // Retirer la section si elle est vide
+        if (section && section.querySelectorAll('li').length === 0) {
+          const letter = section.dataset.letterSection!;
+          section.remove();
+          document.querySelector(`[data-letter-nav="${letter}"]`)?.remove();
+        }
+      }
+
+      const remaining = container.querySelectorAll('li').length;
+      if (count) count.textContent = remaining > 0 ? `${remaining} livre${remaining > 1 ? 's' : ''}` : '';
+      if (remaining === 0 && empty) empty.hidden = false;
+    });
+  });
+</script>

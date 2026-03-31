@@ -1,0 +1,88 @@
+---
+import Button from './Button.astro';
+import Icon from './Icon.astro';
+---
+
+<dialog
+  id="login-dialog"
+  class="c-dialog  c-dialog--sm"
+  aria-labelledby="login-title"
+>
+  <div class="c-dialog__header">
+    <h2 id="login-title" class="c-dialog__title">Connexion</h2>
+    <Button id="login-close" variant="ghost" size="md" aria-label="Fermer">
+      <Icon name="close" size={24} slot="icon" />
+    </Button>
+  </div>
+  <div class="c-dialog__body">
+    <label for="login-password" class="text-sm text-text-light">Mot de passe</label>
+    <div class="relative">
+      <input
+        type="password"
+        id="login-password"
+        autocomplete="current-password"
+        class="c-input pr-10"
+      />
+      <Button
+        id="toggle-password"
+        variant="ghost"
+        size="md"
+        aria-label="Afficher le mot de passe"
+        class="absolute right-2 top-1/2 -translate-y-1/2"
+      >
+        <span id="icon-eye" slot="icon"><Icon name="eye" size={24} /></span>
+        <span id="icon-eye-off" class="hidden"><Icon name="eye-off" size={24} /></span>
+      </Button>
+    </div>
+    <Button id="login-submit" variant="primary" size="md" class="w-full">
+      Se connecter
+    </Button>
+    <p id="login-error" class="hidden text-xs text-red-600" aria-live="polite"></p>
+  </div>
+</dialog>
+
+<script>
+  import { login } from '../utils/auth';
+
+  document.addEventListener('astro:page-load', () => {
+    const dialog = document.getElementById('login-dialog') as HTMLDialogElement;
+    const loginError = document.getElementById('login-error')!;
+    const passwordInput = document.getElementById('login-password') as HTMLInputElement;
+
+    function openDialog(): void {
+      loginError.classList.add('hidden');
+      loginError.textContent = '';
+      dialog.showModal();
+    }
+
+    document.getElementById('login-btn')?.addEventListener('click', openDialog);
+    document.getElementById('login-close')?.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+
+    document.getElementById('login-submit')?.addEventListener('click', async () => {
+      const ok = await login(passwordInput.value);
+      if (ok) {
+        dialog.close();
+        window.location.reload();
+      } else {
+        loginError.textContent = 'Mot de passe incorrect';
+        loginError.classList.remove('hidden');
+      }
+    });
+
+    passwordInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('login-submit')?.click();
+    });
+
+    document.getElementById('toggle-password')?.addEventListener('click', () => {
+      const isHidden = passwordInput.type === 'password';
+      passwordInput.type = isHidden ? 'text' : 'password';
+      document.getElementById('icon-eye')!.classList.toggle('hidden', isHidden);
+      document.getElementById('icon-eye-off')!.classList.toggle('hidden', !isHidden);
+      (document.getElementById('toggle-password') as HTMLButtonElement).setAttribute(
+        'aria-label',
+        isHidden ? 'Masquer le mot de passe' : 'Afficher le mot de passe',
+      );
+    });
+  });
+</script>

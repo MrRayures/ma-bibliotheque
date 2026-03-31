@@ -1,0 +1,19 @@
+/*
+* Alert
+*/
+
+.c-alert {
+  @apply border-2 border-secondary bg-white text-secondary rounded-lg p-3 text-base;
+}
+
+.c-alert--info {
+  @apply border-secondary bg-secondary/10;
+}
+
+.c-alert--alert {
+  @apply border-alert bg-alert/10;
+}
+
+.c-alert--success {
+  @apply border-success bg-success/10;
+}

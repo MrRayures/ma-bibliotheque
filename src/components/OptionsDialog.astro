@@ -1,0 +1,114 @@
+---
+import Button from './Button.astro';
+import Icon from './Icon.astro';
+---
+
+<dialog
+  id="options-dialog"
+  class="c-dialog  c-dialog--md"
+  aria-labelledby="options-title"
+>
+  <div class="c-dialog__header">
+    <h2 id="options-title" class="c-dialog__title">Options</h2>
+    <Button id="options-close" variant="ghost" size="md" aria-label="Fermer">
+      <Icon name="close" size={24} slot="icon" />
+    </Button>
+  </div>
+
+  <div class="flex flex-col gap-4 p-3">
+    <Button id="export-btn" variant="secondary-outline" size="md" iconPosition="left" class="w-full">
+      <Icon name="download" size={16} slot="icon" />
+      Exporter (JSON)
+    </Button>
+
+    <label class="c-btn c-btn--secondary-outline c-btn--md w-full">
+      <Icon name="upload" size={16} />
+      Importer (JSON)
+      <input id="import-input" type="file" accept=".json" class="sr-only" />
+    </label>
+
+    <hr class="my-1 border-neutral-100" />
+
+    <Button id="logout-btn" variant="primary" size="lg" iconPosition="left" class="w-full">
+      <Icon name="logout" size={16} slot="icon" />
+      Se déconnecter
+    </Button>
+
+    <hr class="my-1 border-neutral-100" />
+
+    <div id="delete-zone">
+      <Button id="delete-btn" variant="alert" size="md" iconPosition="left" class="w-full">
+        <Icon name="delete" size={16} slot="icon" />
+        Supprimer tous mes livres
+      </Button>
+      <div id="delete-confirm" class="mt-4 hidden rounded-lg  bg-alert p-3">
+        <p class="mb-3 text-text">Cette action est irréversible. Tous vos livres et couvertures seront supprimés.</p>
+        <div class="flex gap-2">
+          <Button id="delete-confirm-btn" variant="secondary" size="sm" class="flex-1">
+            Oui, supprimer
+          </Button>
+          <Button id="delete-cancel-btn" variant="secondary-outline" size="sm" class="flex-1">
+            Annuler
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  import { clearAllBooks, exportToJson, importFromJson } from '../utils/api';
+  import { logout } from '../utils/auth';
+
+  document.addEventListener('astro:page-load', () => {
+    const dialog = document.getElementById('options-dialog') as HTMLDialogElement;
+    const deleteConfirm = document.getElementById('delete-confirm')!;
+
+    document.getElementById('options-btn')?.addEventListener('click', () => dialog.showModal());
+    document.getElementById('options-close')?.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+    dialog.addEventListener('close', () => deleteConfirm.classList.add('hidden'));
+
+    document.getElementById('logout-btn')?.addEventListener('click', () => {
+      logout();
+      window.location.reload();
+    });
+
+    document.getElementById('export-btn')?.addEventListener('click', async () => {
+      const json = await exportToJson();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bibliotheque-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      dialog.close();
+    });
+
+    document.getElementById('import-input')?.addEventListener('change', async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      try {
+        await importFromJson(await file.text());
+        window.location.reload();
+      } catch (err) {
+        alert((err as Error).message);
+      }
+    });
+
+    document.getElementById('delete-btn')?.addEventListener('click', () => {
+      deleteConfirm.classList.remove('hidden');
+    });
+
+    document.getElementById('delete-confirm-btn')?.addEventListener('click', async () => {
+      await clearAllBooks();
+      dialog.close();
+      window.location.reload();
+    });
+
+    document.getElementById('delete-cancel-btn')?.addEventListener('click', () => {
+      deleteConfirm.classList.add('hidden');
+    });
+  });
+</script>

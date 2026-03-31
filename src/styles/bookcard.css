@@ -1,0 +1,29 @@
+/* Composants book card */
+
+.c-bookcard {
+  @apply relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-secondary transition-transform hover:scale-[1.02] hover:shadow-lg;
+}
+
+.c-bookcard__cover {
+  @apply h-full w-full object-cover;
+}
+
+.c-bookcard__placeholder {
+  @apply flex h-full w-full items-center justify-center;
+}
+
+.c-bookcard__placeholder-letter {
+  @apply text-3xl font-bold text-text-light;
+}
+
+.c-bookcard__overlay {
+  @apply absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-2.5 pb-2.5 pt-10;
+}
+
+.c-bookcard__title {
+  @apply line-clamp-2 text-xs font-semibold leading-snug text-white;
+}
+
+.c-bookcard__meta {
+  @apply mt-0.5 truncate text-[10px] leading-tight text-white/70;
+}

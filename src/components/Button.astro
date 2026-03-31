@@ -1,0 +1,53 @@
+---
+interface Props {
+  variant?: 'primary' | 'primary-outline' |  'secondary' | 'secondary-outline' | 'ghost' | 'alert' | 'alert-outline';
+  size?: 'sm' | 'md' | 'lg';
+  iconPosition?: 'left' | 'right';
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  class?: string;
+  [key: string]: unknown;
+}
+
+const {
+  variant = 'primary',
+  size = 'md',
+  iconPosition,
+  href,
+  type = 'button',
+  class: className = '',
+  ...attrs
+} = Astro.props;
+
+const isIconOnly = Astro.slots.has('icon') && !iconPosition;
+const sizeClass = isIconOnly ? `c-btn--icon-${size}` : `c-btn--${size}`;
+
+const baseClasses = [
+  'c-btn',
+  `c-btn--${variant}`,
+  sizeClass,
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag
+  class={baseClasses}
+  {...href ? { href } : { type }}
+  {...attrs}
+>
+  {iconPosition === 'right' ? (
+    <>
+      <slot />
+      <slot name="icon" />
+    </>
+  ) : (
+    <>
+      <slot name="icon" />
+      <slot />
+    </>
+  )}
+</Tag>

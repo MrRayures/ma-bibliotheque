@@ -1,0 +1,112 @@
+---
+import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+import BookDialog from '../components/BookDialog.astro';
+import LoginDialog from '../components/LoginDialog.astro';
+import OptionsDialog from '../components/OptionsDialog.astro';
+import Button from '../components/Button.astro';
+import Icon from '../components/Icon.astro';
+import Logo from '../components/Logo.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Ma Bibliothèque',
+  description = 'Gestion de ma bibliothèque personnelle de comics, mangas et BD',
+} = Astro.props;
+
+const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#171717" />
+    <title>{title}</title>
+    <ClientRouter />
+  </head>
+  <body class="min-h-screen ">
+
+    <header class="sticky h-15 top-0 z-10 border-b-2  border-secondary bg-white">
+      <div class="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+        <a href="/" class="flex items-center gap-2" aria-label="Accueil">
+          <Logo size={40} eye="default" />
+          <span class="text-base font-bold tracking-tight">Blibli</span>
+        </a>
+        <div class="flex items-center gap-2">
+          <nav aria-label="Navigation principale">
+            <ul class="flex gap-3" role="list">
+              <li>
+                <Button href="/" variant="primary-outline" size="md" aria-current={currentPath === '/' ? 'page' : undefined}>
+                  Livres
+                </Button>
+              </li>
+              <li>
+                <Button href="/collections" variant="primary-outline" size="md" aria-current={currentPath === '/collections' ? 'page' : undefined}>
+                  Collections
+                </Button>
+              </li>
+            </ul>
+          </nav>
+          <div class="flex items-center gap-1 border-l border-neutral-200 pl-2">
+            <Button id="login-btn" variant="secondary-outline" size="md" aria-label="Se connecter">
+              <Icon name="user" size={16} slot="icon" />
+            </Button>
+            <Button id="options-btn" variant="secondary-outline" size="md" aria-label="Options" hidden>
+              <Icon name="settings" size={16} slot="icon" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+    
+    {currentPath !== '/ajouter' && (
+      <Button
+        id="fab-add"
+        href="/ajouter"
+        variant="primary"
+        iconPosition='left'
+        size="lg"
+        aria-label="Ajouter un livre"
+        hidden
+        class="fixed bottom-6 left-1/2 transform -translate-x-1/2  shadow-lg hover:scale-105 active:scale-95"
+      >
+        <Icon name="add" size={24} slot="icon" />
+        Ajouter un livre
+      </Button>
+    )}
+
+    <BookDialog />
+    <LoginDialog />
+    <OptionsDialog />
+  </body>
+</html>
+
+<script>
+  import { isLoggedIn } from '../utils/auth';
+
+  document.addEventListener('astro:page-load', () => {
+    function applyAuthState(): void {
+      const loggedIn = isLoggedIn();
+      document.getElementById('options-btn')?.toggleAttribute('hidden', !loggedIn);
+      document.getElementById('fab-add')?.toggleAttribute('hidden', !loggedIn);
+      document.getElementById('login-btn')?.toggleAttribute('hidden', loggedIn);
+    }
+
+    applyAuthState();
+  });
+</script>
