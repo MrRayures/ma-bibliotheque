@@ -1,0 +1,28 @@
+/* Composant accordion (details/summary) */
+
+.c-accordion {
+  @apply overflow-hidden rounded-xl border-2 border-border bg-white;
+}
+
+.c-accordion-summary {
+  @apply flex cursor-pointer items-center justify-between px-4 py-3 text-lg font-semibold;
+  list-style: none;
+
+  &::marker,
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &::after {
+    content: '';
+    @apply block h-2 w-2 rotate-45 border-b-2 border-r-2 border-current transition-transform duration-200 ease-in-out;
+  }
+}
+
+.c-accordion[open] > .c-accordion-summary::after {
+  @apply -rotate-135;
+}
+
+.c-accordion-content {
+  @apply flex flex-col gap-4 px-4 pb-4;
+}

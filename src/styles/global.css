@@ -1,14 +1,15 @@
 @import 'tailwindcss';
+@import './accordion.css';
 @import './alert.css';
 @import './bookcard.css';
 @import './buttons.css';
 @import './dialogs.css';
 @import './fonts.css';
 @import './inputs.css';
+@import './logo.css';
 
 @theme {
   --font-sans: 'Fredoka', sans-serif;
-
   --color-primary: #fbe78b;
   --color-secondary: #2d2d2d;
   --color-tertiary: #febfcb;

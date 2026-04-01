@@ -5,6 +5,8 @@ interface OpenLibraryBook {
   title?: string;
   subtitle?: string;
   authors?: Array<{ name: string }>;
+  publishers?: Array<{ name: string }>;
+  publish_date?: string;
   cover?: { medium?: string; large?: string };
 }
 
@@ -12,6 +14,8 @@ export interface LookupResult {
   title: string;
   subtitle: string | null;
   authors: string[];
+  publisher: string | null;
+  publishDate: string | null;
   coverUrl: string | null;
   openLibraryUrl: string | null;
   ean: string;
@@ -37,6 +41,8 @@ export async function lookupByEan(ean: string): Promise<LookupResult | null> {
         title: book.title ?? '',
         subtitle: book.subtitle ?? null,
         authors: book.authors?.map((a) => a.name) ?? [],
+        publisher: book.publishers?.[0]?.name ?? null,
+        publishDate: book.publish_date ?? null,
         coverUrl: book.cover?.large ?? book.cover?.medium ?? null,
         openLibraryUrl: book.url ?? null,
         ean,
@@ -47,16 +53,31 @@ export async function lookupByEan(ean: string): Promise<LookupResult | null> {
   return result;
 }
 
+const VOLUME_PATTERNS = [
+  /\btome\s*(\d+)/i,
+  /\bvol(?:ume)?\.?\s*(\d+)/i,
+  /\bT\.?\s*(\d+)\b/,
+  /#\s*(\d+)/,
+];
+
 export function extractVolume(title: string): number | null {
-  const patterns = [
-    /\btome\s*(\d+)/i,
-    /\bvol(?:ume)?\.?\s*(\d+)/i,
-    /\bT\.?\s*(\d+)\b/,
-    /#\s*(\d+)/,
-  ];
-  for (const re of patterns) {
+  for (const re of VOLUME_PATTERNS) {
     const match = re.exec(title);
     if (match?.[1]) return parseInt(match[1], 10);
+  }
+  return null;
+}
+
+export function extractCollectionName(title: string): string | null {
+  for (const re of VOLUME_PATTERNS) {
+    if (re.test(title)) {
+      return (
+        title
+          .replace(re, '')
+          .replace(/[\s\-–—:,]+$/, '')
+          .trim() || null
+      );
+    }
   }
   return null;
 }
@@ -78,6 +99,8 @@ export function buildBook(
     title: result.title,
     subtitle: result.subtitle,
     authors: result.authors,
+    publisher: result.publisher,
+    publishDate: result.publishDate,
     ean: result.ean,
     collection:
       collectionName && collectionSlug && collectionVolume !== null

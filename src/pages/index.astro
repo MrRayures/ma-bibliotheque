@@ -6,10 +6,12 @@ import Icon from '../components/Icon.astro';
 ---
 
 <BaseLayout title="Livres — Ma Bibliothèque">
-  <div class="mx-auto max-w-5xl px-4 pt-3 pb-8">
+  <div class="mx-auto max-w-5xl px-4 pt-3 pb-28">
     <div class=" flex items-center justify-between">
-      <h1 class="text-2xl font-bold ">Livres</h1>
-      <p id="book-count" class="text-sm text-text-light" aria-live="polite"></p>
+      <h1 class="text-2xl font-bold ">
+        Livres
+        <span id="book-count" class="text-sm text-text-light font-normal" aria-live="polite"></span>
+      </h1>
     </div>
 
     <div class="sticky top-15 z-10 -mx-4 bg-bg px-4 pb-3 pt-2">
@@ -17,7 +19,7 @@ import Icon from '../components/Icon.astro';
       <nav
         id="letter-nav"
         aria-label="Navigation par lettre"
-        class="mt-2 pb-1.5 hidden overflow-x-auto"
+        class="mt-4 mt-2 pb-1.5 hidden overflow-x-auto"
       ></nav>
     </div>
 
@@ -34,20 +36,16 @@ import Icon from '../components/Icon.astro';
       ))}
     </div>
     <div id="books-empty" class="mt-16 flex flex-col items-center gap-4 text-center" hidden>
-      <p class="text-sm text-text-light">Aucun livre pour l'instant.</p>
-      <Button href="/ajouter" variant="primary" size="md" iconPosition="left">
-        <Icon name="add" size={16} slot="icon" />
-        Ajoutez votre premier livre
-      </Button>
+      <p class="text-sm">C'est vide par ici ! <br>Ajouter un livre en cliquant sur le bouton ci-dessous.</p>
     </div>
   </div>
 </BaseLayout>
 
 <script>
   import { getAllBooks, getEffectiveCoverUrl } from '../utils/api';
-  import { isLoggedIn } from '../utils/auth';
-  import { groupByLetter } from '../utils/books';
-  import { createBookListItem } from '../utils/render';
+import { isLoggedIn } from '../utils/auth';
+import { groupByLetter } from '../utils/books';
+import { createBookListItem } from '../utils/render';
 
   document.addEventListener('astro:page-load', async () => {
     function updateSectionVisibility(): void {
@@ -153,7 +151,7 @@ import Icon from '../components/Icon.astro';
 
     container.appendChild(fragment);
     if (loading) loading.hidden = true;
-    if (count) count.textContent = `${books.length} livre${books.length > 1 ? 's' : ''}`;
+    if (count) count.textContent = `(${books.length})`;
 
     // Indicateur de lettre active au scroll
     function setActiveLetter(letter: string): void {

@@ -1,7 +1,7 @@
 {
   "name": "Ma Bibliothèque",
   "id": "/",
-  "short_name": "Blibli",
+  "short_name": "BD",
   "description": "Gestion de ma bibliothèque personnelle",
   "start_url": "/",
   "display": "standalone",

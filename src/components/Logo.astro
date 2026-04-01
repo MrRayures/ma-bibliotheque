@@ -17,7 +17,7 @@ const { eye = 'default', size = 32, ...rest } = Astro.props;
   xmlns="http://www.w3.org/2000/svg"
   role="img"
   aria-label="Logo Ma Bibliothèque"
-  class={rest.class}
+  class:list={['c-logo', rest.class]}
   style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;"
 >
   <path
@@ -32,9 +32,9 @@ const { eye = 'default', size = 32, ...rest } = Astro.props;
   />
   <g id="eye-default" style={eye === 'default' ? undefined : 'display:none'}>
     <path d="M169,88C169,107.054 160.173,117.5 142.5,117.5C124.827,117.5 118,107.054 118,88C118,68.946 127.327,57 145,57C162.673,57 169,68.946 169,88Z" style="fill:white;fill-rule:nonzero;" />
-    <path d="M164,87.735C164,98.943 160.899,104.5 152.235,104.5C143.572,104.5 139,98.943 139,87.735C139,76.527 143.572,69.5 152.235,69.5C160.899,69.5 164,76.527 164,87.735Z" style="fill-rule:nonzero;" />
+    <path class="left-eye" d="M164,87.735C164,98.943 160.899,104.5 152.235,104.5C143.572,104.5 139,98.943 139,87.735C139,76.527 143.572,69.5 152.235,69.5C160.899,69.5 164,76.527 164,87.735Z" style="fill-rule:nonzero;" />
     <path d="M101,88C101,107.054 92.173,117.5 74.5,117.5C56.827,117.5 50,107.054 50,88C50,68.946 59.327,57 77,57C94.673,57 101,68.946 101,88Z" style="fill:white;fill-rule:nonzero;" />
-    <path d="M96,87.735C96,98.943 92.899,104.5 84.235,104.5C75.572,104.5 71,98.943 71,87.735C71,76.527 75.572,69.5 84.235,69.5C92.899,69.5 96,76.527 96,87.735Z" style="fill-rule:nonzero;" />
+    <path class="right-eye" d="M96,87.735C96,98.943 92.899,104.5 84.235,104.5C75.572,104.5 71,98.943 71,87.735C71,76.527 75.572,69.5 84.235,69.5C92.899,69.5 96,76.527 96,87.735Z" style="fill-rule:nonzero;" />
   </g>
   <g id="eye-concern" style={eye === 'concern' ? undefined : 'display:none'}>
     <path d="M120.918,72.149L171.656,73.563L170.647,88.14L119.199,84.577L120.918,72.149Z" style="fill:white;fill-rule:nonzero;" />

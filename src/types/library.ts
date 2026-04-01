@@ -9,6 +9,8 @@ export interface Book {
   title: string;
   subtitle: string | null;
   authors: string[];
+  publisher: string | null;
+  publishDate: string | null;
   ean: string;
   collection: BookCollection | null;
   cover: string | null;

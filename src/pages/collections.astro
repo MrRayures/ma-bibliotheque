@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SearchBar from '../components/SearchBar.astro';
+import Button from '../components/Button.astro';
 import RenameDialog from '../components/RenameDialog.astro';
 import Icon from '../components/Icon.astro';
 ---
@@ -9,10 +10,13 @@ import Icon from '../components/Icon.astro';
   title="Collections — Ma Bibliothèque"
   description="Vue par collections de ma bibliothèque personnelle"
 >
-  <div class="mx-auto max-w-5xl px-4 pt-3 pb-8">
+  <div class="mx-auto max-w-5xl px-4 pt-3 pb-28">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold ">Collections</h1>
-      <p id="collection-count" class="text-sm text-text-light" aria-live="polite"></p>
+      <h1 class="text-2xl font-bold ">
+        Collections
+        <span id="collection-count" class="text-sm text-text-light font-normal" aria-live="polite"></span>
+      </h1>
+      
     </div>
 
     <div class="sticky top-15 z-10 -mx-4 bg-bg px-4 pb-3 pt-2">
@@ -36,9 +40,9 @@ import Icon from '../components/Icon.astro';
       ))}
     </div>
 
-    <p id="collections-empty" class="mt-8 text-sm text-text-light" hidden>
-      Aucune collection pour l'instant.
-    </p>
+    <div id="collections-empty" class="mt-16 flex flex-col items-center gap-4 text-center" hidden>
+      <p class="text-sm">C'est vide par ici ! <br>Ajouter un livre en cliquant sur le bouton ci-dessous.</p>
+    </div>
   </div>
 
   <RenameDialog />
@@ -50,11 +54,11 @@ import Icon from '../components/Icon.astro';
 
 <script>
   import type { Book } from '../types/library';
-  import { getAllBooks, getEffectiveCoverUrl } from '../utils/api';
-  import { isLoggedIn } from '../utils/auth';
-  import type { ViewMode } from '../utils/books';
-  import { getCollectionViewMode, groupByCollection, setCollectionViewMode } from '../utils/books';
-  import { createBookListItem } from '../utils/render';
+import { getAllBooks, getEffectiveCoverUrl } from '../utils/api';
+import { isLoggedIn } from '../utils/auth';
+import type { ViewMode } from '../utils/books';
+import { getCollectionViewMode, groupByCollection, setCollectionViewMode } from '../utils/books';
+import { createBookListItem } from '../utils/render';
 
   document.addEventListener('astro:page-load', async () => {
     const UL_GRID    = 'grid grid-cols-[repeat(auto-fill,minmax(var(--card-size),1fr))] gap-3';
@@ -172,10 +176,10 @@ import Icon from '../components/Icon.astro';
 
       header.appendChild(row);
 
-      const subtitle = document.createElement('p');
-      subtitle.className = 'mt-0.5 text-sm text-text-light';
-      subtitle.textContent = `${books.length} tome${books.length > 1 ? 's' : ''}`;
-      header.appendChild(subtitle);
+      const subtitle = document.createElement('span');
+      subtitle.className = 'text-sm text-text-light font-normal';
+      subtitle.textContent = ` (${books.length})`;
+      heading.appendChild(subtitle);
 
       section.appendChild(header);
       return section;
@@ -230,11 +234,11 @@ import Icon from '../components/Icon.astro';
       li?.remove();
       if (section && section.querySelectorAll('li').length === 0) section.remove();
       const remaining = container.querySelectorAll('section').length;
-      if (countEl) countEl.textContent = remaining > 0 ? `${remaining} collection${remaining > 1 ? 's' : ''}` : '';
+      if (countEl) countEl.textContent = remaining > 0 ? `(${remaining})` : '';
     });
 
     if (loading) loading.hidden = true;
-    if (countEl) countEl.textContent = `${collections.size} collection${collections.size > 1 ? 's' : ''}`;
+    if (countEl) countEl.textContent = `(${collections.size})`;
 
     function refreshAllToggles(): void {
       container.querySelectorAll<HTMLElement>('section[data-collection]').forEach(updateToggleVisibility);

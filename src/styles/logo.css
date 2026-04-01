@@ -1,0 +1,31 @@
+/* Composants logo */
+
+@keyframes eye-look {
+  0% {
+    transform: translateX(0);
+  }
+  4% {
+    transform: translateX(-15px);
+  }
+  8% {
+    transform: translateX(0);
+  }
+  12%,
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.c-logo {
+  .left-eye,
+  .right-eye {
+    animation: eye-look 17s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .left-eye,
+    .right-eye {
+      animation: none;
+    }
+  }
+}
