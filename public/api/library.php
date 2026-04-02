@@ -56,6 +56,15 @@ if ($cover_id !== null) {
 
     $from_url = $_GET['from'] ?? null;
 
+    // Lire l'URL depuis le body JSON si absente du query string
+    if ($from_url === null) {
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+        if (str_contains($contentType, 'application/json')) {
+            $jsonBody = json_decode(file_get_contents('php://input'), true);
+            $from_url = $jsonBody['from'] ?? null;
+        }
+    }
+
     if ($from_url !== null) {
         // ─── Téléchargement server-side depuis une source autorisée ───────────
         $parsed = parse_url($from_url);

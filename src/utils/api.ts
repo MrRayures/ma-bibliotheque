@@ -106,9 +106,10 @@ async function uploadCoverFromUrl(
   coverUrl: string,
   token: string,
 ): Promise<string | null> {
-  const res = await fetch(`${getApiUrl()}?cover=${bookId}&from=${encodeURIComponent(coverUrl)}`, {
+  const res = await fetch(`${getApiUrl()}?cover=${bookId}`, {
     method: 'POST',
-    headers: { 'X-Token': token },
+    headers: { 'Content-Type': 'application/json', 'X-Token': token },
+    body: JSON.stringify({ from: coverUrl }),
   });
   if (!res.ok) return null;
   const data = (await res.json()) as { url: string };
