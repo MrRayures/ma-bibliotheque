@@ -33,6 +33,15 @@ if ($cover_id !== null) {
         exit;
     }
 
+    // ─── DELETE cover ──────────────────────────────────────────────────────
+    if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+        foreach (glob(COVERS_DIR . '/' . $cover_id . '.*') ?: [] as $old) {
+            unlink($old);
+        }
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         http_response_code(405);
         echo json_encode(['error' => 'Méthode non autorisée']);
@@ -48,11 +57,20 @@ if ($cover_id !== null) {
     $from_url = $_GET['from'] ?? null;
 
     if ($from_url !== null) {
-        // ─── Téléchargement server-side depuis Open Library ───────────────────
+        // ─── Téléchargement server-side depuis une source autorisée ───────────
         $parsed = parse_url($from_url);
         $host   = $parsed['host'] ?? '';
 
-        if (!preg_match('/(?:^|\.)openlibrary\.org$/', $host)) {
+        $allowed = [
+            '/(?:^|\.)openlibrary\.org$/',
+            '/(?:^|\.)books\.google\.com$/',
+            '/(?:^|\.)googleapis\.com$/',
+        ];
+        $hostAllowed = false;
+        foreach ($allowed as $pattern) {
+            if (preg_match($pattern, $host)) { $hostAllowed = true; break; }
+        }
+        if (!$hostAllowed) {
             http_response_code(400);
             echo json_encode(['error' => 'URL non autorisée']);
             exit;
@@ -67,6 +85,21 @@ if ($cover_id !== null) {
         }
 
         $ext = 'jpg';
+    } elseif (!empty($_FILES['file'])) {
+        // ─── Upload via FormData (fallback navigateur) ────────────────────────
+        $file = $_FILES['file'];
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Upload échoué']);
+            exit;
+        }
+        $mime = strtolower($file['type'] ?? 'image/jpeg');
+        $ext  = match($mime) {
+            'image/png'  => 'png',
+            'image/webp' => 'webp',
+            default      => 'jpg',
+        };
+        $body = file_get_contents($file['tmp_name']);
     } else {
         // ─── Upload direct (blob dans le body) ────────────────────────────────
         $mime = strtolower(explode(';', $_SERVER['CONTENT_TYPE'] ?? 'image/jpeg')[0]);

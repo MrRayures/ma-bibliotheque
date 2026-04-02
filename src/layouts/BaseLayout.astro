@@ -96,8 +96,8 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
 </html>
 
 <script>
-  import { isLoggedIn } from '../utils/auth';
   import { navigate } from 'astro:transitions/client';
+import { isLoggedIn } from '../utils/auth';
 
   document.addEventListener('astro:page-load', () => {
     function applyAuthState(): void {

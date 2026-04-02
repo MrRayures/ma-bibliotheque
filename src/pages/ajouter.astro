@@ -14,7 +14,6 @@ import Logo from '../components/Logo.astro';
     <details id="search-book" class="c-accordion mb-6">
       <summary class="c-accordion-summary">Rechercher un livre</summary>
       <div class="c-accordion-content">
-
         <div>
           <label for="ean-input" class="mb-1 block text-sm font-medium">
             EAN / ISBN
@@ -30,6 +29,28 @@ import Logo from '../components/Logo.astro';
               class="c-input flex-1 py-2.5 font-mono"
             />
             <Button id="search-btn" variant="secondary" size="md">
+              <Icon name="search" size={16} slot="icon" />
+            </Button>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 text-text-light">
+          <hr class="flex-1 border-2 border-border" />
+          <span>ou</span>
+          <hr class="flex-1 border-2 border-border" />
+        </div>
+        <div>
+          <label for="title-search-input" class="mb-1 block text-sm font-medium">
+            Titre
+          </label>
+          <div class="flex gap-2">
+            <input
+              type="text"
+              id="title-search-input"
+              placeholder="ex : Tokyo Ghoul"
+              autocomplete="off"
+              class="c-input flex-1 py-2.5"
+            />
+            <Button id="title-search-btn" variant="secondary" size="md">
               <Icon name="search" size={16} slot="icon" />
             </Button>
           </div>
@@ -227,13 +248,30 @@ import Logo from '../components/Logo.astro';
   </div>
 
   <template id="tpl-icon-loading"><Icon name="loading" size={16} class="animate-spin" /></template>
+
+  <!-- Modale résultats recherche par titre -->
+  <dialog
+    id="search-results-dialog"
+    class="c-dialog c-dialog--md"
+    aria-labelledby="search-results-title"
+  >
+    <div class="c-dialog__header sticky top-0 bg-white">
+      <h2 id="search-results-title" class="c-dialog__title">Résultats</h2>
+      <Button id="search-results-close" variant="ghost" size="lg" aria-label="Fermer">
+        <Icon name="close" size={18} slot="icon" />
+      </Button>
+    </div>
+    <div id="search-results-body" class="c-dialog__body">
+    </div>
+  </dialog>
 </BaseLayout>
 
 <script>
   import type { Book } from '../types/library';
 import { getBookByEan, getBookById, getCollectionNames, getEffectiveCoverUrl, saveBook, uploadCover } from '../utils/api';
 import { isLoggedIn } from '../utils/auth';
-import { buildBook, extractCollectionName, extractVolume, lookupByEan } from '../utils/openLibrary';
+import type { SearchProgress, SearchResult } from '../utils/openLibrary';
+import { buildBook, extractCollectionName, extractVolume, lookupByEan, searchByTitle } from '../utils/openLibrary';
 import { translateToFrench } from '../utils/translate';
 
   document.addEventListener('astro:page-load', async () => {
@@ -248,9 +286,14 @@ import { translateToFrench } from '../utils/translate';
 
     const searchAccordion = document.getElementById('search-book') as HTMLDetailsElement;
     const eanInput = document.getElementById('ean-input') as HTMLInputElement;
+    const titleSearchInput = document.getElementById('title-search-input') as HTMLInputElement;
+    const titleSearchBtn = document.getElementById('title-search-btn')!;
     const scanBtn = document.getElementById('scan-btn')!;
     const searchBtn = document.getElementById('search-btn')!;
     const alertZone = document.getElementById('alert-zone')!;
+    const searchResultsDialog = document.getElementById('search-results-dialog') as HTMLDialogElement;
+    const searchResultsBody = document.getElementById('search-results-body')!;
+    const searchResultsClose = document.getElementById('search-results-close')!;
 
     // ─── Éléments DOM : formulaire livre ─────────────────────────────────────────
 
@@ -466,7 +509,7 @@ import { translateToFrench } from '../utils/translate';
 
     // ─── Recherche ───────────────────────────────────────────────────────────────
 
-    async function triggerLookup(ean: string): Promise<void> {
+    async function triggerLookup(ean: string, fallbackCoverUrl: string | null = null): Promise<void> {
       resetBookFields();
       hideAlert();
       hideForm();
@@ -488,6 +531,10 @@ import { translateToFrench } from '../utils/translate';
           return;
         }
 
+        if (!result.coverUrl && fallbackCoverUrl) {
+          result.coverUrl = fallbackCoverUrl;
+        }
+
         showAlert('Livre trouvé ! Vérifiez les informations et ajoutez le livre.', 'success');
         await fillBookFromResult(result, ean);
       } catch {
@@ -501,6 +548,93 @@ import { translateToFrench } from '../utils/translate';
         triggerLookup(val);
       } else {
         showAlert('Saisissez un EAN / ISBN à 13 chiffres.', 'alert');
+      }
+    }
+
+    // ─── Recherche par titre ─────────────────────────────────────────────────────
+
+    function renderSearchResults(results: SearchResult[]): void {
+      if (results.length === 0) {
+        searchResultsBody.innerHTML = '<p class="py-4 text-center text-sm text-text-light">Aucun résultat trouvé.</p>';
+        return;
+      }
+
+      searchResultsBody.innerHTML = results
+        .map(
+          (r, i) => `
+          <button
+            type="button"
+            class="c-search-result"
+            data-index="${i}"
+          >
+            <div class="c-search-result-cover">
+              ${r.coverUrl ? `<img src="${r.coverUrl}" alt="" class="h-full w-full object-cover" />` : ''}
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium">${r.title}</p>
+              <p class="truncate text-xs text-text-light">${r.authors.join(', ') || 'Auteur inconnu'}</p>
+              ${r.ean ? `<p class="mt-1 font-mono text-xs text-text-light">${r.ean}</p>` : '<p class="mt-1 text-xs text-alert">Pas d\'ISBN</p>'}
+            </div>
+          </button>`,
+        )
+        .join('');
+    }
+
+    function renderProgress(progress: SearchProgress): void {
+      if (progress.done) {
+        renderSearchResults(progress.results);
+        return;
+      }
+      const loadingHtml = `<p class="py-2 text-center text-xs text-text-light">Recherche sur ${progress.source}…</p>`;
+      if (progress.results.length === 0) {
+        searchResultsBody.innerHTML = loadingHtml;
+      } else {
+        renderSearchResults(progress.results);
+        searchResultsBody.insertAdjacentHTML('beforeend', loadingHtml);
+      }
+    }
+
+    async function triggerTitleSearch(): Promise<void> {
+      const query = titleSearchInput.value.trim();
+      if (!query) return;
+
+      searchResultsBody.innerHTML = '';
+      searchResultsDialog.showModal();
+
+      let latestResults: SearchResult[] = [];
+
+      const onClick = (e: Event) => {
+        const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.c-search-result');
+        if (!btn) return;
+        const idx = parseInt(btn.dataset.index ?? '', 10);
+        const selected = latestResults[idx];
+        if (!selected) return;
+
+        searchResultsBody.removeEventListener('click', onClick);
+        searchResultsDialog.close();
+
+        if (selected.ean) {
+          eanInput.value = selected.ean;
+          triggerLookup(selected.ean, selected.coverUrl);
+        } else {
+          showAlert('Ce livre n\'a pas d\'ISBN — renseignez les informations manuellement.', 'info');
+          enableManualEntry('');
+          titleInput.value = selected.title;
+          authorsInput.value = selected.authors.join(', ');
+          pendingCoverUrl = selected.coverUrl;
+          if (selected.coverUrl) setCoverPreview(selected.coverUrl);
+        }
+      };
+
+      searchResultsBody.addEventListener('click', onClick);
+
+      try {
+        await searchByTitle(query, (progress) => {
+          latestResults = progress.results;
+          renderProgress(progress);
+        });
+      } catch {
+        searchResultsBody.innerHTML = '<p class="py-4 text-center text-sm text-alert">Erreur lors de la recherche.</p>';
       }
     }
 
@@ -603,6 +737,20 @@ import { translateToFrench } from '../utils/translate';
         e.preventDefault();
         triggerSearch();
       }
+    });
+
+    titleSearchBtn.addEventListener('click', triggerTitleSearch);
+
+    titleSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        triggerTitleSearch();
+      }
+    });
+
+    searchResultsClose.addEventListener('click', () => searchResultsDialog.close());
+    searchResultsDialog.addEventListener('click', (e) => {
+      if (e.target === searchResultsDialog) searchResultsDialog.close();
     });
 
     submitBtn.addEventListener('click', handleSubmit);

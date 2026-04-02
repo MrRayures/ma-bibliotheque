@@ -92,3 +92,12 @@ html:has(dialog[open]) {
     opacity: 1;
   }
 }
+
+/* ─── Search results ───────────────────────────────────────────────────────── */
+.c-search-result {
+  @apply flex w-full cursor-pointer items-center gap-3 rounded-lg border border-neutral-200 p-2 text-left transition-colors hover:bg-neutral-50;
+}
+
+.c-search-result-cover {
+  @apply h-16 w-11 shrink-0 overflow-hidden rounded bg-neutral-100;
+}

@@ -9,15 +9,15 @@ import Icon from './Icon.astro';
   aria-labelledby="dialog-book-title"
 >
   <div class="c-book-dialog__layout">
+    <Button id="book-dialog-close" variant="ghost" size="lg" aria-label="Fermer" class="fixed top-2 right-2 z-10 bg-white/80 backdrop-blur-sm rounded-full">
+      <Icon name="close" size={24} slot="icon" />
+    </Button>
     <!-- Cover -->
     <div class="c-book-dialog__cover">
       <img id="dialog-cover-img" src="" alt="" class="hidden h-full w-full object-contain bg-primary" />
       <div id="dialog-cover-placeholder" class="absolute bg-primary text-text inset-0 hidden items-center justify-center">
         <span class="text-5xl font-bold text-text"></span>
       </div>
-      <Button id="book-dialog-close" variant="ghost" size="sm" aria-label="Fermer" class="fixed top-2 right-2 z-10 bg-white/80 backdrop-blur-sm rounded-full">
-        <Icon name="close" size={16} slot="icon" />
-      </Button>
     </div>
 
     <!-- Contenu scrollable -->
@@ -64,11 +64,11 @@ import Icon from './Icon.astro';
 
     <!-- Actions sticky bottom -->
     <div id="dialog-actions" class="c-book-dialog__actions hidden">
-      <Button id="dialog-edit" href="#" variant="secondary-outline" size="md" iconPosition="left" class="flex-1">
+      <Button id="dialog-edit" href="#" variant="secondary-outline" size="lg" iconPosition="left" class="flex-1">
         <Icon name="edit" size={14} slot="icon" />
         Modifier
       </Button>
-      <Button id="dialog-delete" variant="alert" size="md" iconPosition="left" class="flex-1">
+      <Button id="dialog-delete" variant="alert" size="lg" iconPosition="left" class="flex-1">
         <Icon name="delete" size={14} slot="icon" />
         Supprimer
       </Button>
@@ -78,7 +78,7 @@ import Icon from './Icon.astro';
 
 <script>
   import type { Book } from '../types/library';
-  import { deleteBook } from '../utils/api';
+import { deleteBook } from '../utils/api';
 
   document.addEventListener('astro:page-load', () => {
     const dialog = document.getElementById('book-dialog') as HTMLDialogElement;

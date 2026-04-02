@@ -10,6 +10,14 @@ interface OpenLibraryBook {
   cover?: { medium?: string; large?: string };
 }
 
+export interface SearchResult {
+  title: string;
+  authors: string[];
+  coverUrl: string | null;
+  ean: string | null;
+  source: 'openlibrary' | 'googlebooks';
+}
+
 export interface LookupResult {
   title: string;
   subtitle: string | null;
@@ -21,7 +29,151 @@ export interface LookupResult {
   ean: string;
 }
 
-const CACHE_PREFIX = 'ol_cache_';
+const CACHE_PREFIX = 'book_cache_';
+
+async function lookupOnOpenLibrary(ean: string): Promise<LookupResult | null> {
+  const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${ean}&format=json&jscmd=data`;
+  const response = await fetch(url);
+  if (!response.ok) return null;
+
+  const data = (await response.json()) as Record<string, OpenLibraryBook>;
+  const book = data[`ISBN:${ean}`];
+  if (!book) return null;
+
+  return {
+    title: book.title ?? '',
+    subtitle: book.subtitle ?? null,
+    authors: book.authors?.map((a) => a.name) ?? [],
+    publisher: book.publishers?.[0]?.name ?? null,
+    publishDate: book.publish_date ?? null,
+    coverUrl: book.cover?.large ?? book.cover?.medium ?? null,
+    openLibraryUrl: book.url ?? null,
+    ean,
+  };
+}
+
+interface GoogleBooksVolume {
+  volumeInfo?: {
+    title?: string;
+    subtitle?: string;
+    authors?: string[];
+    publisher?: string;
+    publishedDate?: string;
+    imageLinks?: { thumbnail?: string; smallThumbnail?: string };
+    industryIdentifiers?: Array<{ type: string; identifier: string }>;
+    infoLink?: string;
+  };
+}
+
+async function lookupOnGoogleBooks(ean: string): Promise<LookupResult | null> {
+  const apiKey = import.meta.env.PUBLIC_GOOGLE_BOOKS_API_KEY;
+  if (!apiKey) return null;
+
+  const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${ean}&key=${apiKey}`;
+  const response = await fetch(url);
+  if (!response.ok) return null;
+
+  const data = (await response.json()) as { items?: GoogleBooksVolume[] };
+  const vol = data.items?.[0]?.volumeInfo;
+  if (!vol?.title) return null;
+
+  const coverUrl = vol.imageLinks?.thumbnail?.replace('http://', 'https://') ?? null;
+
+  return {
+    title: vol.title,
+    subtitle: vol.subtitle ?? null,
+    authors: vol.authors ?? [],
+    publisher: vol.publisher ?? null,
+    publishDate: vol.publishedDate ?? null,
+    coverUrl,
+    openLibraryUrl: vol.infoLink ?? null,
+    ean,
+  };
+}
+
+interface OpenLibrarySearchDoc {
+  title?: string;
+  author_name?: string[];
+  cover_i?: number;
+  isbn?: string[];
+}
+
+async function searchOnOpenLibrary(query: string): Promise<SearchResult[]> {
+  const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(query)}&limit=10`;
+  const response = await fetch(url);
+  if (!response.ok) return [];
+
+  const data = (await response.json()) as { docs?: OpenLibrarySearchDoc[] };
+  return (data.docs ?? []).map((doc) => {
+    const isbn13 = doc.isbn?.find(
+      (i) => i.length === 13 && (i.startsWith('978') || i.startsWith('979')),
+    );
+    return {
+      title: doc.title ?? '',
+      authors: doc.author_name ?? [],
+      coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null,
+      ean: isbn13 ?? null,
+      source: 'openlibrary' as const,
+    };
+  });
+}
+
+async function searchOnGoogleBooks(query: string): Promise<SearchResult[]> {
+  const apiKey = import.meta.env.PUBLIC_GOOGLE_BOOKS_API_KEY;
+  if (!apiKey) return [];
+
+  const url = `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(query)}&maxResults=10&key=${apiKey}`;
+  const response = await fetch(url);
+  if (!response.ok) return [];
+
+  const data = (await response.json()) as { items?: GoogleBooksVolume[] };
+  return (data.items ?? []).map((item) => {
+    const vol = item.volumeInfo;
+    const isbn13 = vol?.industryIdentifiers?.find((i) => i.type === 'ISBN_13')?.identifier ?? null;
+    return {
+      title: vol?.title ?? '',
+      authors: vol?.authors ?? [],
+      coverUrl: vol?.imageLinks?.thumbnail?.replace('http://', 'https://') ?? null,
+      ean: isbn13,
+      source: 'googlebooks' as const,
+    };
+  });
+}
+
+function deduplicateResults(results: SearchResult[]): SearchResult[] {
+  const seen = new Set<string>();
+  return results.filter((r) => {
+    if (!r.title) return false;
+    const key = r.ean ?? `${r.title}-${r.authors.join(',')}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+export interface SearchProgress {
+  source: string;
+  results: SearchResult[];
+  done: boolean;
+}
+
+export async function searchByTitle(
+  query: string,
+  onProgress: (progress: SearchProgress) => void,
+): Promise<SearchResult[]> {
+  let all: SearchResult[] = [];
+
+  onProgress({ source: 'Google Books', results: [], done: false });
+  const gbResults = await searchOnGoogleBooks(query);
+  all = deduplicateResults([...all, ...gbResults]);
+  onProgress({ source: 'Open Library', results: all, done: false });
+
+  const olResults = await searchOnOpenLibrary(query);
+  all = deduplicateResults([...all, ...olResults]);
+  onProgress({ source: '', results: all, done: true });
+
+  return all;
+}
 
 export async function lookupByEan(ean: string): Promise<LookupResult | null> {
   const cacheKey = `${CACHE_PREFIX}${ean}`;
@@ -30,24 +182,16 @@ export async function lookupByEan(ean: string): Promise<LookupResult | null> {
     return JSON.parse(cached) as LookupResult | null;
   }
 
-  const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${ean}&format=json&jscmd=data`;
-  const response = await fetch(url);
-  if (!response.ok) return null;
+  const [olResult, gbResult] = await Promise.all([
+    lookupOnOpenLibrary(ean),
+    lookupOnGoogleBooks(ean),
+  ]);
 
-  const data = (await response.json()) as Record<string, OpenLibraryBook>;
-  const book = data[`ISBN:${ean}`];
-  const result: LookupResult | null = book
-    ? {
-        title: book.title ?? '',
-        subtitle: book.subtitle ?? null,
-        authors: book.authors?.map((a) => a.name) ?? [],
-        publisher: book.publishers?.[0]?.name ?? null,
-        publishDate: book.publish_date ?? null,
-        coverUrl: book.cover?.large ?? book.cover?.medium ?? null,
-        openLibraryUrl: book.url ?? null,
-        ean,
-      }
-    : null;
+  const result = olResult ?? gbResult;
+
+  if (result && !result.coverUrl) {
+    result.coverUrl = olResult?.coverUrl ?? gbResult?.coverUrl ?? null;
+  }
 
   sessionStorage.setItem(cacheKey, JSON.stringify(result));
   return result;

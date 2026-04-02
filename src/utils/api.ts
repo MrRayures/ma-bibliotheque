@@ -56,8 +56,23 @@ export async function saveBook(book: Book): Promise<void> {
   await writeBooks(books);
 }
 
+async function deleteCover(bookId: string): Promise<void> {
+  const token = getAuthToken();
+  if (!token) return;
+  try {
+    await fetch(`${getApiUrl()}?cover=${bookId}`, {
+      method: 'DELETE',
+      headers: { 'X-Token': token },
+    });
+  } catch {
+    /* best effort */
+  }
+}
+
 export async function deleteBook(id: string): Promise<void> {
   const books = await fetchBooks();
+  const book = books.find((b) => b.id === id);
+  if (book?.cover) await deleteCover(id);
   await writeBooks(books.filter((b) => b.id !== id));
 }
 
@@ -86,17 +101,70 @@ export async function getCollectionNames(): Promise<string[]> {
   return [...names].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
 }
 
+async function uploadCoverFromUrl(
+  bookId: string,
+  coverUrl: string,
+  token: string,
+): Promise<string | null> {
+  const res = await fetch(`${getApiUrl()}?cover=${bookId}&from=${encodeURIComponent(coverUrl)}`, {
+    method: 'POST',
+    headers: { 'X-Token': token },
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as { url: string };
+  return data.url;
+}
+
+function loadImageAsBlob(url: string): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(null);
+        return;
+      }
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.9);
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+async function uploadCoverFromBlob(
+  bookId: string,
+  coverUrl: string,
+  token: string,
+): Promise<string | null> {
+  const blob = await loadImageAsBlob(coverUrl);
+  if (!blob) return null;
+
+  const formData = new FormData();
+  formData.append('file', blob, `${bookId}.jpg`);
+
+  const res = await fetch(`${getApiUrl()}?cover=${bookId}`, {
+    method: 'POST',
+    headers: { 'X-Token': token },
+    body: formData,
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as { url: string };
+  return data.url;
+}
+
 export async function uploadCover(bookId: string, coverUrl: string): Promise<string | null> {
   const token = getAuthToken();
   if (!token) return null;
   try {
-    const res = await fetch(`${getApiUrl()}?cover=${bookId}&from=${encodeURIComponent(coverUrl)}`, {
-      method: 'POST',
-      headers: { 'X-Token': token },
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { url: string };
-    return data.url;
+    return (
+      (await uploadCoverFromUrl(bookId, coverUrl, token)) ??
+      (await uploadCoverFromBlob(bookId, coverUrl, token))
+    );
   } catch {
     return null;
   }
