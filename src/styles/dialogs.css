@@ -55,12 +55,18 @@ html:has(dialog[open]) {
 }
 
 .c-book-dialog__cover {
-  @apply relative w-full shrink-0 overflow-hidden bg-neutral-100;
+  @apply relative w-full shrink-0 overflow-hidden bg-neutral-100 flex items-center justify-center;
 
   @apply sm:absolute sm:w-80 sm:left-0 sm:top-0 h-full;
 
   @media (width <= 40rem) {
     height: 45dvh;
+  }
+
+  img {
+    max-width: 100%;
+    width: auto;
+    height: auto;
   }
 }
 
