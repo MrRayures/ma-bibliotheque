@@ -36,6 +36,14 @@ import Icon from './Icon.astro';
           <dt class="mb-0.5 text-sm font-semibold uppercase tracking-wide text-text-light">Collection</dt>
           <dd id="dialog-collection"></dd>
         </div>
+        <div id="dialog-row-publisher" class="hidden">
+          <dt class="mb-0.5 text-sm font-semibold uppercase tracking-wide text-text-light">Éditeur</dt>
+          <dd id="dialog-publisher"></dd>
+        </div>
+        <div id="dialog-row-publish-date" class="hidden">
+          <dt class="mb-0.5 text-sm font-semibold uppercase tracking-wide text-text-light">Date de publication</dt>
+          <dd id="dialog-publish-date"></dd>
+        </div>
         <div>
           <dt class="mb-0.5 text-sm font-semibold uppercase tracking-wide text-text-light">ISBN/EAN</dt>
           <dd id="dialog-ean" class="font-mono"></dd>
@@ -121,6 +129,22 @@ import { deleteBook } from '../utils/api';
         rowCollection.classList.remove('hidden');
       } else {
         rowCollection.classList.add('hidden');
+      }
+
+      const rowPublisher = document.getElementById('dialog-row-publisher')!;
+      if (book.publisher) {
+        document.getElementById('dialog-publisher')!.textContent = book.publisher;
+        rowPublisher.classList.remove('hidden');
+      } else {
+        rowPublisher.classList.add('hidden');
+      }
+
+      const rowPublishDate = document.getElementById('dialog-row-publish-date')!;
+      if (book.publishDate) {
+        document.getElementById('dialog-publish-date')!.textContent = book.publishDate;
+        rowPublishDate.classList.remove('hidden');
+      } else {
+        rowPublishDate.classList.add('hidden');
       }
 
       document.getElementById('dialog-ean')!.textContent = book.ean || '—';
