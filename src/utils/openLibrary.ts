@@ -65,6 +65,14 @@ interface GoogleBooksVolume {
   };
 }
 
+function enhanceGoogleCoverUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  return url
+    .replace('http://', 'https://')
+    .replace(/&zoom=\d/, '&zoom=2')
+    .replace(/&edge=curl/, '');
+}
+
 async function lookupOnGoogleBooks(ean: string): Promise<LookupResult | null> {
   const apiKey = import.meta.env.PUBLIC_GOOGLE_BOOKS_API_KEY;
   if (!apiKey) return null;
@@ -77,7 +85,7 @@ async function lookupOnGoogleBooks(ean: string): Promise<LookupResult | null> {
   const vol = data.items?.[0]?.volumeInfo;
   if (!vol?.title) return null;
 
-  const coverUrl = vol.imageLinks?.thumbnail?.replace('http://', 'https://') ?? null;
+  const coverUrl = enhanceGoogleCoverUrl(vol.imageLinks?.thumbnail);
 
   return {
     title: vol.title,
@@ -133,7 +141,7 @@ async function searchOnGoogleBooks(query: string): Promise<SearchResult[]> {
     return {
       title: vol?.title ?? '',
       authors: vol?.authors ?? [],
-      coverUrl: vol?.imageLinks?.thumbnail?.replace('http://', 'https://') ?? null,
+      coverUrl: enhanceGoogleCoverUrl(vol?.imageLinks?.thumbnail),
       ean: isbn13,
       source: 'googlebooks' as const,
     };
