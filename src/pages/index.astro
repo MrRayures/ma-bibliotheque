@@ -19,7 +19,7 @@ import Icon from '../components/Icon.astro';
       <nav
         id="letter-nav"
         aria-label="Navigation par lettre"
-        class="mt-4 mt-2 pb-1.5 hidden overflow-x-auto"
+        class="mt-4 pb-1.5 hidden overflow-x-auto"
       ></nav>
     </div>
 
@@ -44,8 +44,8 @@ import Icon from '../components/Icon.astro';
 <script>
   import { getAllBooks, getEffectiveCoverUrl } from '../utils/api';
 import { isLoggedIn } from '../utils/auth';
-import { groupByLetter } from '../utils/books';
-import { createBookListItem } from '../utils/render';
+import { buildIndexEntries, groupEntriesByLetter } from '../utils/books';
+import { createBookListItem, createCollectionListItem, updateCardCover } from '../utils/render';
 
   document.addEventListener('astro:page-load', async () => {
     function updateSectionVisibility(): void {
@@ -84,7 +84,8 @@ import { createBookListItem } from '../utils/render';
       return;
     }
 
-    const groups = groupByLetter(books);
+    const entries = buildIndexEntries(books);
+    const groups = groupEntriesByLetter(entries);
 
     const sortedLetters = [...groups.keys()].sort((a, b) => {
       if (a === '#') return 1;
@@ -100,14 +101,13 @@ import { createBookListItem } from '../utils/render';
 
       const allLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
       for (const letter of allLetters) {
-        const hasBooks = groups.has(letter);
-        if (hasBooks) {
+        const hasEntries = groups.has(letter);
+        if (hasEntries) {
           const a = document.createElement('a');
           a.href = `#lettre-${letter}`;
           a.textContent = letter;
           a.dataset.letterNav = letter;
-          a.className =
-            'c-btn c-btn--letter';
+          a.className = 'c-btn c-btn--letter';
           inner.appendChild(a);
         } else {
           const span = document.createElement('span');
@@ -122,6 +122,7 @@ import { createBookListItem } from '../utils/render';
     }
 
     // Sections par lettre
+    let totalBooks = books.length;
     const fragment = document.createDocumentFragment();
     for (const letter of sortedLetters) {
       const section = document.createElement('section');
@@ -129,8 +130,7 @@ import { createBookListItem } from '../utils/render';
 
       const heading = document.createElement('h2');
       heading.id = `lettre-${letter}`;
-      heading.className =
-        'mb-3 font-semibold uppercase tracking-widest scroll-mt-20';
+      heading.className = 'mb-3 font-semibold uppercase tracking-widest scroll-mt-20';
       heading.textContent = letter;
       section.appendChild(heading);
 
@@ -139,10 +139,26 @@ import { createBookListItem } from '../utils/render';
       ul.setAttribute('role', 'list');
       ul.setAttribute('aria-label', `Livres — ${letter}`);
 
-      for (const book of groups.get(letter)!) {
-        const coverUrl = getEffectiveCoverUrl(book);
-        const li = createBookListItem(book, coverUrl, `${book.title} ${book.authors.join(' ')}`, loggedIn);
-        ul.appendChild(li);
+      for (const entry of groups.get(letter)!) {
+        if (entry.kind === 'book') {
+          const coverUrl = getEffectiveCoverUrl(entry.book);
+          const li = createBookListItem(
+            entry.book,
+            coverUrl,
+            `${entry.book.title} ${entry.book.authors.join(' ')}`,
+            loggedIn,
+          );
+          ul.appendChild(li);
+        } else {
+          const li = createCollectionListItem(
+            entry.name,
+            entry.slug,
+            entry.books,
+            loggedIn,
+            getEffectiveCoverUrl,
+          );
+          ul.appendChild(li);
+        }
       }
 
       section.appendChild(ul);
@@ -151,7 +167,7 @@ import { createBookListItem } from '../utils/render';
 
     container.appendChild(fragment);
     if (loading) loading.hidden = true;
-    if (count) count.textContent = `(${books.length})`;
+    if (count) count.textContent = `(${totalBooks})`;
 
     // Indicateur de lettre active au scroll
     function setActiveLetter(letter: string): void {
@@ -205,9 +221,19 @@ import { createBookListItem } from '../utils/render';
         }
       }
 
-      const remaining = container.querySelectorAll('li').length;
-      if (count) count.textContent = remaining > 0 ? `${remaining} livre${remaining > 1 ? 's' : ''}` : '';
-      if (remaining === 0 && empty) empty.hidden = false;
+      totalBooks--;
+      if (count) count.textContent = totalBooks > 0 ? `(${totalBooks})` : '';
+      if (totalBooks === 0 && empty) empty.hidden = false;
+    });
+
+    // Mise à jour cover après upload
+    document.addEventListener('book-cover-updated', (e) => {
+      const { id, coverUrl } = (e as CustomEvent<{ id: string; coverUrl: string }>).detail;
+      const li = container.querySelector<HTMLElement>(`li[data-book-id="${id}"]`);
+      if (!li) return;
+      li.dataset.coverUrl = coverUrl;
+      const card = li.querySelector<HTMLElement>('.c-bookcard');
+      if (card) updateCardCover(card, coverUrl);
     });
   });
 </script>

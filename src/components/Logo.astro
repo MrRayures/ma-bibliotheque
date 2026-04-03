@@ -2,15 +2,17 @@
 export type EyeVariant = 'default' | 'concern' | 'question' | 'happy';
 
 interface Props {
+  id?: string;
   eye?: EyeVariant;
   size?: number;
   class?: string;
 }
 
-const { eye = 'default', size = 32, ...rest } = Astro.props;
+const { id, eye = 'default', size = 32, ...rest } = Astro.props;
 ---
 
 <svg
+  id={id}
   width={size}
   height={size}
   viewBox="0 0 218 209"

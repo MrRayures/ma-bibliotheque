@@ -8,6 +8,10 @@
   &:hover {
     @apply cursor-pointer;
   }
+
+  &.hidden {
+    display: none;
+  }
 }
 
 /* ─── Variants ───────────────────────────────────────────────────────────────── */
@@ -42,6 +46,23 @@
 
   &:hover {
     @apply bg-secondary text-white border-secondary;
+  }
+}
+
+.c-btn--tertiary {
+  @apply bg-tertiary border-tertiary text-text;
+
+  &:hover {
+    @apply bg-tertiary;
+  }
+}
+
+.c-btn--tertiary-outline {
+  @apply bg-white border-tertiary text-text;
+
+  &:hover,
+  &[aria-current='page'] {
+    @apply bg-tertiary text-text;
   }
 }
 

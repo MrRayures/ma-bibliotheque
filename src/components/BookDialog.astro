@@ -14,9 +14,20 @@ import Icon from './Icon.astro';
     </Button>
     <!-- Cover -->
     <div class="c-book-dialog__cover">
-      <img id="dialog-cover-img" src="" alt="" class="hidden h-full w-full object-contain bg-primary" />
-      <div id="dialog-cover-placeholder" class="absolute bg-primary text-text inset-0 hidden items-center justify-center">
-        <span class="text-5xl font-bold text-text"></span>
+      <img id="dialog-cover-img" src="" alt="" class="hidden" />
+      <div id="dialog-cover-placeholder" class="absolute bg-secondary inset-0 hidden items-center justify-center">
+        <span class="text-5xl font-bold text-primary"></span>
+        <Button id="dialog-add-cover-btn" variant="primary" iconPosition="left" size="lg" class="absolute bottom-3 hidden">
+          Ajouter
+        </Button>
+        <input
+          type="file"
+          id="dialog-cover-file"
+          accept="image/*"
+          capture="environment"
+          class="hidden"
+          aria-label="Sélectionner une image de couverture"
+        />
       </div>
     </div>
 
@@ -53,7 +64,7 @@ import Icon from './Icon.astro';
           <dd id="dialog-date"></dd>
         </div>
         <div id="dialog-row-openlibrary" class="hidden">
-          <dt class="mb-0.5 text-sm font-semibold uppercase tracking-wide text-text-light">Open Library</dt>
+          <dt class="mb-0.5 text-sm font-semibold uppercase tracking-wide text-text-light">Fiche</dt>
           <dd>
             <a
               id="dialog-openlibrary"
@@ -72,7 +83,7 @@ import Icon from './Icon.astro';
 
     <!-- Actions sticky bottom -->
     <div id="dialog-actions" class="c-book-dialog__actions hidden">
-      <Button id="dialog-edit" href="#" variant="secondary-outline" size="lg" iconPosition="left" class="flex-1">
+      <Button id="dialog-edit" href="#" variant="secondary-outline" size="lg" iconPosition="left" class="flex-1" data-astro-reload>
         <Icon name="edit" size={14} slot="icon" />
         Modifier
       </Button>
@@ -86,10 +97,30 @@ import Icon from './Icon.astro';
 
 <script>
   import type { Book } from '../types/library';
-import { deleteBook } from '../utils/api';
+import { deleteBook, getBookById, saveBook, uploadCoverFile } from '../utils/api';
+
+  function resizeImage(file: File, maxWidth: number): Promise<Blob | null> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const ratio = Math.min(maxWidth / img.naturalWidth, 1);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.naturalWidth * ratio);
+        canvas.height = Math.round(img.naturalHeight * ratio);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(null); return; }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.85);
+      };
+      img.onerror = () => resolve(null);
+      img.src = URL.createObjectURL(file);
+    });
+  }
 
   document.addEventListener('astro:page-load', () => {
     const dialog = document.getElementById('book-dialog') as HTMLDialogElement;
+    const addCoverBtn = document.getElementById('dialog-add-cover-btn') as HTMLButtonElement;
+    const coverFileInput = document.getElementById('dialog-cover-file') as HTMLInputElement;
     let currentBookId: string | null = null;
 
     document.addEventListener('open-book-dialog', (e) => {
@@ -113,6 +144,8 @@ import { deleteBook } from '../utils/api';
         coverPlaceholder.classList.add('flex');
         coverPlaceholder.querySelector('span')!.textContent = (book.title[0] ?? '?').toUpperCase();
       }
+      addCoverBtn.classList.toggle('hidden', !!coverUrl || !isLoggedIn);
+      coverFileInput.value = '';
 
       document.getElementById('dialog-book-title')!.textContent = book.title;
 
@@ -188,6 +221,35 @@ import { deleteBook } from '../utils/api';
       dialog.close();
       document.dispatchEvent(new CustomEvent('book-deleted', { detail: { id: currentBookId } }));
       currentBookId = null;
+    });
+
+    addCoverBtn.addEventListener('click', () => coverFileInput.click());
+
+    coverFileInput.addEventListener('change', async () => {
+      const file = coverFileInput.files?.[0];
+      if (!file || !currentBookId) return;
+      const blob = await resizeImage(file, 300);
+      if (!blob) return;
+      addCoverBtn.textContent = 'Envoi…';
+      addCoverBtn.disabled = true;
+      const url = await uploadCoverFile(currentBookId, blob);
+      addCoverBtn.disabled = false;
+      if (!url) return;
+      const bookToUpdate = await getBookById(currentBookId);
+      if (bookToUpdate) {
+        bookToUpdate.cover = url;
+        await saveBook(bookToUpdate);
+      }
+      const coverImg = document.getElementById('dialog-cover-img') as HTMLImageElement;
+      const coverPlaceholder = document.getElementById('dialog-cover-placeholder')!;
+      coverImg.src = url;
+      coverImg.alt = '';
+      coverImg.classList.remove('hidden');
+      coverPlaceholder.classList.add('hidden');
+      addCoverBtn.classList.add('hidden');
+      document.dispatchEvent(new CustomEvent('book-cover-updated', {
+        detail: { id: currentBookId, coverUrl: url },
+      }));
     });
   });
 </script>

@@ -171,6 +171,25 @@ export async function uploadCover(bookId: string, coverUrl: string): Promise<str
   }
 }
 
+export async function uploadCoverFile(bookId: string, blob: Blob): Promise<string | null> {
+  const token = getAuthToken();
+  if (!token) return null;
+  try {
+    const formData = new FormData();
+    formData.append('file', blob, `${bookId}.jpg`);
+    const res = await fetch(`${getApiUrl()}?cover=${bookId}`, {
+      method: 'POST',
+      headers: { 'X-Token': token },
+      body: formData,
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { url: string };
+    return data.url;
+  } catch {
+    return null;
+  }
+}
+
 export function getEffectiveCoverUrl(book: Book): string | null {
   return book.cover;
 }

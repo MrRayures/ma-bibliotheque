@@ -58,7 +58,7 @@ import { getAllBooks, getEffectiveCoverUrl } from '../utils/api';
 import { isLoggedIn } from '../utils/auth';
 import type { ViewMode } from '../utils/books';
 import { getCollectionViewMode, groupByCollection, setCollectionViewMode } from '../utils/books';
-import { createBookListItem } from '../utils/render';
+import { createBookListItem, updateCardCover } from '../utils/render';
 
   document.addEventListener('astro:page-load', async () => {
     const UL_GRID    = 'grid grid-cols-[repeat(auto-fill,minmax(var(--card-size),1fr))] gap-3';
@@ -213,7 +213,7 @@ import { createBookListItem } from '../utils/render';
 
       for (const book of collectionBooks) {
         const coverUrl = getEffectiveCoverUrl(book);
-        const li = createBookListItem(book, coverUrl, book.title.toLowerCase(), loggedIn);
+        const li = createBookListItem(book, coverUrl, book.title.toLowerCase(), loggedIn, { inCollection: true });
         li.removeAttribute('data-search');
         grid.appendChild(li);
       }
@@ -235,6 +235,15 @@ import { createBookListItem } from '../utils/render';
       if (section && section.querySelectorAll('li').length === 0) section.remove();
       const remaining = container.querySelectorAll('section').length;
       if (countEl) countEl.textContent = remaining > 0 ? `(${remaining})` : '';
+    });
+
+    document.addEventListener('book-cover-updated', (e) => {
+      const { id, coverUrl } = (e as CustomEvent<{ id: string; coverUrl: string }>).detail;
+      const li = container.querySelector<HTMLElement>(`li[data-book-id="${id}"]`);
+      if (!li) return;
+      li.dataset.coverUrl = coverUrl;
+      const card = li.querySelector<HTMLElement>('.c-bookcard');
+      if (card) updateCardCover(card, coverUrl);
     });
 
     if (loading) loading.hidden = true;

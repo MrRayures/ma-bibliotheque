@@ -16,6 +16,10 @@
   @apply text-3xl font-bold text-text-light;
 }
 
+.c-bookcard__volume-badge {
+  @apply absolute top-2 right-2 z-10 flex h-6 w-auto px-1.5 items-center justify-center rounded-full bg-tertiary font-semibold text-xs text-text;
+}
+
 .c-bookcard__overlay {
   @apply absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-2.5 pb-2.5 pt-10;
 }
@@ -26,4 +30,25 @@
 
 .c-bookcard__meta {
   @apply mt-0.5 truncate text-[10px] leading-tight text-white/70;
+}
+
+/* Volume card inside expanded collection */
+[data-collection-member] .c-bookcard {
+  @apply border-2 border-tertiary;
+}
+
+/* Collection card variant */
+.c-bookcard--collection {
+  .c-bookcard__overlay {
+    @apply inset-0 flex flex-col items-center justify-center bg-black/60 pt-0 pb-0;
+    background-image: none;
+  }
+
+  .c-bookcard__title {
+    @apply text-center text-sm text-tertiary;
+  }
+
+  .c-bookcard__meta {
+    @apply text-center;
+  }
 }

@@ -11,6 +11,8 @@ import Logo from '../components/Logo.astro';
 
   <div class="mx-auto max-w-lg px-4 pb-28 pt-3">
 
+    <h1 id="edit-heading" class="mb-6 text-2xl font-bold hidden">Modifier le livre</h1>
+
     <details id="search-book" class="c-accordion mb-6">
       <summary class="c-accordion-summary">Rechercher un livre</summary>
       <div class="c-accordion-content">
@@ -46,7 +48,7 @@ import Logo from '../components/Logo.astro';
             <input
               type="text"
               id="title-search-input"
-              placeholder="ex : Tokyo Ghoul"
+              placeholder="ex : Astérix"
               autocomplete="off"
               class="c-input flex-1 py-2.5"
             />
@@ -70,15 +72,36 @@ import Logo from '../components/Logo.astro';
     <!-- Zone d'alerte -->
     <div id="alert-zone" class="mb-6 hidden" role="alert" aria-live="polite"></div>
 
+    <!-- Aperçu livre existant (doublon) -->
+    <div id="existing-book-preview" class="mb-6 hidden"></div>
+
     <!-- Infos livre -->
     <div id="book-info" class="mb-6 ">
       <div class="flex gap-4">
-        <div
-          id="cover-preview"
-          class="h-28 w-20 shrink-0 overflow-hidden rounded-lg bg-primary border-2 border-secondary flex items-center justify-center"
-        >
-        <Logo size={40} eye="question" class="opacity-50" />
-      </div>
+        <div class="flex shrink-0 flex-col items-center gap-1">
+          <div
+            id="cover-preview"
+            class="relative h-30 w-22 overflow-hidden rounded-lg bg-primary border-2 border-secondary flex items-center justify-center"
+          >
+            <Logo id="cover-logo" size={40} eye="question" class="opacity-50" />
+          </div>
+          <Button
+            id="cover-upload-btn"
+            variant="secondary"
+            size="sm"
+            class="hidden"
+          >
+            Ajouter
+          </Button>
+        </div>
+        <input
+          type="file"
+          id="cover-file-input"
+          accept="image/*"
+          class="hidden"
+          capture="environment"
+          aria-label="Sélectionner une image de couverture"
+        />
         <div class="flex min-w-0 flex-1 flex-col gap-3">
           <div>
             <label for="book-ean-input" class="mb-1 block text-sm font-medium">
@@ -160,7 +183,7 @@ import Logo from '../components/Logo.astro';
     <!-- Champs supplémentaires -->
     <div id="extra-fields" class="hidden">
       <div class="mb-4">
-        <p class="mb-2 text-sm font-medium">
+        <p class="mb-2 text-md font-medium">
           Collection <span class="font-normal text-text-light">(optionnel)</span>
         </p>
 
@@ -178,9 +201,9 @@ import Logo from '../components/Logo.astro';
               <option value="">— Sélectionner —</option>
             </select>
             <div class="my-2 flex items-center gap-2 text-text-light">
-              <hr class="flex-1 border-2 border-border" />
+              <hr class="flex-1 border-2 border-white" />
               <span>ou</span>
-              <hr class="flex-1 border-2 border-border" />
+              <hr class="flex-1 border-2 border-white" />
             </div>
           </div>
 
@@ -196,8 +219,6 @@ import Logo from '../components/Logo.astro';
             class="c-input"
           />
         </div>
-
-
       </div>
 
       <div id="volume-row" class="mb-6 hidden">
@@ -209,7 +230,7 @@ import Logo from '../components/Logo.astro';
           id="volume-input"
           name="volume"
           min="1"
-          placeholder="1"
+          placeholder="1, 2, 3..."
           class="c-input w-32"
         />
       </div>
@@ -221,10 +242,15 @@ import Logo from '../components/Logo.astro';
       <div class="c-alert c-alert--success mb-4">
         <p class="text-sm font-medium">Livre ajouté avec succès !</p>
       </div>
-      <div class="flex flex-col gap-2">
-        <Button class="w-full" href="/" variant="secondary-outline" size="lg">
-          Voir ma bibliothèque
+      <div class="flex flex-col gap-4">
+        <div class="flex gap-4">
+          <Button class="w-full" id="view-book-btn" variant="secondary-outline" size="lg">
+            Voir le livre
+          </Button>
+          <Button class="w-full" href="/" variant="secondary-outline" size="lg">
+            Ma bibliothèque
         </Button>
+        </div>
         <Button class="w-full" id="add-another-btn" variant="secondary" size="lg">
           Ajouter un autre livre
         </Button>
@@ -268,7 +294,7 @@ import Logo from '../components/Logo.astro';
 
 <script>
   import type { Book } from '../types/library';
-import { getBookByEan, getBookById, getCollectionNames, getEffectiveCoverUrl, saveBook, uploadCover } from '../utils/api';
+import { getBookByEan, getBookById, getCollectionNames, getEffectiveCoverUrl, saveBook, uploadCover, uploadCoverFile } from '../utils/api';
 import { isLoggedIn } from '../utils/auth';
 import type { SearchProgress, SearchResult } from '../utils/openLibrary';
 import { buildBook, extractCollectionName, extractVolume, lookupByEan, searchByTitle } from '../utils/openLibrary';
@@ -291,6 +317,7 @@ import { translateToFrench } from '../utils/translate';
     const scanBtn = document.getElementById('scan-btn')!;
     const searchBtn = document.getElementById('search-btn')!;
     const alertZone = document.getElementById('alert-zone')!;
+    const existingBookPreview = document.getElementById('existing-book-preview')!;
     const searchResultsDialog = document.getElementById('search-results-dialog') as HTMLDialogElement;
     const searchResultsBody = document.getElementById('search-results-body')!;
     const searchResultsClose = document.getElementById('search-results-close')!;
@@ -300,6 +327,9 @@ import { translateToFrench } from '../utils/translate';
     const bookInfo = document.getElementById('book-info')!;
     const extraFields = document.getElementById('extra-fields')!;
     const coverPreview = document.getElementById('cover-preview')!;
+    const coverLogo = document.getElementById('cover-logo')!;
+    const coverUploadBtn = document.getElementById('cover-upload-btn') as HTMLButtonElement;
+    const coverFileInput = document.getElementById('cover-file-input') as HTMLInputElement;
     const bookEanInput = document.getElementById('book-ean-input') as HTMLInputElement;
     const titleInput = document.getElementById('title-input') as HTMLInputElement;
     const subtitleInput = document.getElementById('subtitle-input') as HTMLInputElement;
@@ -320,6 +350,7 @@ import { translateToFrench } from '../utils/translate';
     const submitBtn = document.getElementById('submit-btn')!;
     const formActions = document.getElementById('form-actions')!;
     const stateSuccess = document.getElementById('state-success')!;
+    const viewBookBtn = document.getElementById('view-book-btn')!;
     const addAnotherBtn = document.getElementById('add-another-btn')!;
 
     // ─── State ───────────────────────────────────────────────────────────────────
@@ -327,6 +358,7 @@ import { translateToFrench } from '../utils/translate';
     const editId = new URLSearchParams(location.search).get('id');
     const submitBtnText = submitBtn.textContent ?? '';
     let pendingCoverUrl: string | null = null;
+    let pendingCoverBlob: Blob | null = null;
     let pendingOpenLibraryUrl: string | null = null;
     let isManual = false;
 
@@ -341,6 +373,29 @@ import { translateToFrench } from '../utils/translate';
     function hideAlert(): void {
       alertZone.className = 'mb-6 hidden';
       alertZone.innerHTML = '';
+      hideExistingBook();
+    }
+
+    function showExistingBook(book: Book): void {
+      const coverUrl = getEffectiveCoverUrl(book);
+      const coverHtml = coverUrl
+        ? `<img src="${coverUrl}" alt="" class="h-full w-full object-cover" />`
+        : `<span class="text-lg font-bold text-text-light">${(book.title[0] ?? '?').toUpperCase()}</span>`;
+      existingBookPreview.innerHTML = `
+        <a href="/ajouter?id=${book.id}" class="c-search-result">
+          <div class="c-search-result-cover">${coverHtml}</div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-medium">${book.title}</p>
+            <p class="truncate text-xs text-text-light">${book.authors.join(', ') || 'Auteur inconnu'}</p>
+            ${book.ean ? `<p class="mt-1 font-mono text-xs text-text-light">${book.ean}</p>` : ''}
+          </div>
+        </a>`;
+      existingBookPreview.classList.remove('hidden');
+    }
+
+    function hideExistingBook(): void {
+      existingBookPreview.classList.add('hidden');
+      existingBookPreview.innerHTML = '';
     }
 
     function showForm(): void {
@@ -353,21 +408,88 @@ import { translateToFrench } from '../utils/translate';
       extraFields.classList.add('hidden');
     }
 
-    function showSuccessState(): void {
+    function showSuccessState(book: Book): void {
       hideForm();
       hideAlert();
       searchAccordion.classList.add('hidden');
       formActions.classList.add('hidden');
       stateSuccess.classList.remove('hidden');
+      viewBookBtn.onclick = () => {
+        document.dispatchEvent(new CustomEvent('open-book-dialog', {
+          detail: { book, coverUrl: book.cover, isLoggedIn: true },
+        }));
+      };
     }
 
     function setCoverPreview(url: string): void {
+      coverLogo.classList.add('hidden');
+      coverUploadBtn.classList.add('hidden');
+      const existing = coverPreview.querySelector('img');
+      if (existing) existing.remove();
+      const oldLoader = coverPreview.querySelector('[data-cover-loader]');
+      if (oldLoader) oldLoader.remove();
+
+      const tpl = document.getElementById('tpl-icon-loading') as HTMLTemplateElement;
+      const loader = document.createElement('div');
+      loader.setAttribute('data-cover-loader', '');
+      loader.className = 'absolute inset-0 flex items-center justify-center';
+      loader.appendChild(tpl.content.cloneNode(true));
+      coverPreview.appendChild(loader);
+
       const img = document.createElement('img');
-      img.src = url;
       img.alt = '';
       img.className = 'h-full w-full object-cover';
+      img.onload = () => loader.remove();
+      img.onerror = () => loader.remove();
+      img.src = url;
       coverPreview.appendChild(img);
     }
+
+    function resetCoverPreview(): void {
+      const img = coverPreview.querySelector('img');
+      if (img) img.remove();
+      coverLogo.classList.remove('hidden');
+      coverUploadBtn.classList.add('hidden');
+    }
+
+    function showCoverUploadBtn(): void {
+      coverLogo.classList.add('hidden');
+      coverUploadBtn.classList.remove('hidden');
+    }
+
+    function resizeImage(file: File, maxWidth: number): Promise<Blob | null> {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const ratio = Math.min(maxWidth / img.naturalWidth, 1);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.naturalWidth * ratio);
+          canvas.height = Math.round(img.naturalHeight * ratio);
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { resolve(null); return; }
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.85);
+        };
+        img.onerror = () => resolve(null);
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    coverUploadBtn.addEventListener('click', () => coverFileInput.click());
+
+    coverFileInput.addEventListener('change', async () => {
+      const file = coverFileInput.files?.[0];
+      if (!file) return;
+      const blob = await resizeImage(file, 300);
+      if (!blob) { showAlert('Impossible de lire cette image.', 'alert'); return; }
+      pendingCoverBlob = blob;
+      pendingCoverUrl = null;
+      setCoverPreview(URL.createObjectURL(blob));
+      if (editId) {
+        coverUploadBtn.textContent = 'Modifier';
+        coverUploadBtn.classList.remove('hidden');
+      }
+    });
 
     function setSubmitLoading(loading: boolean): void {
       (submitBtn as HTMLButtonElement).disabled = loading;
@@ -384,8 +506,10 @@ import { translateToFrench } from '../utils/translate';
     // ─── Helpers formulaire ──────────────────────────────────────────────────────
 
     function resetBookFields(): void {
-      coverPreview.innerHTML = '';
+      resetCoverPreview();
       pendingCoverUrl = null;
+      pendingCoverBlob = null;
+      coverFileInput.value = '';
       pendingOpenLibraryUrl = null;
       bookEanInput.value = '';
       bookEanInput.readOnly = false;
@@ -428,7 +552,7 @@ import { translateToFrench } from '../utils/translate';
       bookEanInput.value = ean;
       bookEanInput.readOnly = true;
       titleInput.value = title;
-      titleInput.readOnly = true;
+      titleInput.readOnly = false;
       subtitleInput.value = subtitle;
       subtitleInput.readOnly = result.subtitle !== null;
       authorsInput.value = translatedAuthors.join(', ');
@@ -457,13 +581,17 @@ import { translateToFrench } from '../utils/translate';
 
       pendingCoverUrl = result.coverUrl;
       pendingOpenLibraryUrl = result.openLibraryUrl;
-      if (result.coverUrl) setCoverPreview(result.coverUrl);
+      if (result.coverUrl) {
+        setCoverPreview(result.coverUrl);
+      } else {
+        showCoverUploadBtn();
+      }
 
       showForm();
       searchAccordion.open = false;
     }
 
-    function resetForm(): void {
+    async function resetForm(): Promise<void> {
       eanInput.value = '';
       resetBookFields();
       isManual = false;
@@ -473,6 +601,7 @@ import { translateToFrench } from '../utils/translate';
       searchAccordion.classList.remove('hidden');
       searchAccordion.open = true;
       formActions.classList.remove('hidden');
+      await refreshCollectionSelect();
     }
 
     // ─── Collections ─────────────────────────────────────────────────────────────
@@ -520,6 +649,7 @@ import { translateToFrench } from '../utils/translate';
         const existing = await getBookByEan(ean);
         if (existing) {
           showAlert('Ce livre est déjà dans ta bibliothèque.', 'alert');
+          showExistingBook(existing);
           return;
         }
 
@@ -622,7 +752,11 @@ import { translateToFrench } from '../utils/translate';
           titleInput.value = selected.title;
           authorsInput.value = selected.authors.join(', ');
           pendingCoverUrl = selected.coverUrl;
-          if (selected.coverUrl) setCoverPreview(selected.coverUrl);
+          if (selected.coverUrl) {
+            setCoverPreview(selected.coverUrl);
+          } else {
+            showCoverUploadBtn();
+          }
         }
       };
 
@@ -672,6 +806,9 @@ import { translateToFrench } from '../utils/translate';
           ? { name: data.collection, slug: collectionSlug, volume: data.volume }
           : null,
       };
+      if (pendingCoverBlob) {
+        updatedBook.cover = await uploadCoverFile(updatedBook.id, pendingCoverBlob);
+      }
       await saveBook(updatedBook);
       window.location.href = '/';
     }
@@ -691,11 +828,13 @@ import { translateToFrench } from '../utils/translate';
         data.collection,
         data.volume,
       );
-      if (pendingCoverUrl) {
+      if (pendingCoverBlob) {
+        book.cover = await uploadCoverFile(book.id, pendingCoverBlob);
+      } else if (pendingCoverUrl) {
         book.cover = await uploadCover(book.id, pendingCoverUrl);
       }
       await saveBook(book);
-      showSuccessState();
+      showSuccessState(book);
     }
 
     async function handleSubmit(): Promise<void> {
@@ -761,9 +900,10 @@ import { translateToFrench } from '../utils/translate';
     if (editId) {
       const existing = await getBookById(editId);
       if (existing) {
-        (document.querySelector('h1') as HTMLElement).textContent = 'Modifier le livre';
+        const editHeading = document.getElementById('edit-heading');
+        if (editHeading) editHeading.classList.remove('hidden');
+        searchAccordion.classList.add('hidden');
         submitBtn.textContent = 'Enregistrer';
-        scanBtn.hidden = true;
 
         eanInput.value = existing.ean;
         eanInput.readOnly = true;
@@ -782,6 +922,9 @@ import { translateToFrench } from '../utils/translate';
 
         const existingCoverUrl = getEffectiveCoverUrl(existing);
         if (existingCoverUrl) setCoverPreview(existingCoverUrl);
+        coverLogo.classList.add('hidden');
+        coverUploadBtn.textContent = existingCoverUrl ? 'Modifier' : 'Ajouter';
+        coverUploadBtn.classList.remove('hidden');
 
         showForm();
         await refreshCollectionSelect(existing.collection?.name ?? null);
