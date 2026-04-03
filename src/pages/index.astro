@@ -1,27 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import SearchBar from '../components/SearchBar.astro';
-import Button from '../components/Button.astro';
-import Icon from '../components/Icon.astro';
+import PageHeader from '../components/PageHeader.astro';
 ---
 
 <BaseLayout title="Livres — Ma Bibliothèque">
   <div class="mx-auto max-w-5xl px-4 pt-3 pb-28">
-    <div class=" flex items-center justify-between">
-      <h1 class="text-2xl font-bold ">
-        Livres
-        <span id="book-count" class="text-sm text-text-light font-normal" aria-live="polite"></span>
-      </h1>
-    </div>
-
-    <div class="sticky top-15 z-10 -mx-4 bg-bg px-4 pb-3 pt-2">
-      <SearchBar placeholder="Rechercher par titre ou auteur..." />
-      <nav
-        id="letter-nav"
-        aria-label="Navigation par lettre"
-        class="mt-4 pb-1.5 hidden overflow-x-auto"
-      ></nav>
-    </div>
+    <PageHeader title="Livres" countId="book-count" searchPlaceholder="Rechercher par titre ou auteur..." />
 
     <div id="book-grid" class="c-book-grid mt-4 space-y-8"></div>
 
@@ -45,7 +29,7 @@ import Icon from '../components/Icon.astro';
   import { getAllBooks } from '../utils/api';
 import { isLoggedIn } from '../utils/auth';
 import { buildIndexEntries, groupEntriesByLetter } from '../utils/books';
-import { createBookListItem, createCollectionListItem, updateCardCover } from '../utils/render';
+import { buildLetterNav, createBookListItem, createCollectionListItem, observeLetterSections, updateCardCover } from '../utils/render';
 
   document.addEventListener('astro:page-load', async () => {
     function updateSectionVisibility(): void {
@@ -93,33 +77,7 @@ import { createBookListItem, createCollectionListItem, updateCardCover } from '.
       return a.localeCompare(b, 'fr');
     });
 
-    // Navigation par lettre — toutes les lettres A–Z affichées
-    if (nav) {
-      nav.classList.remove('hidden');
-      const inner = document.createElement('div');
-      inner.className = 'flex gap-1 min-w-max';
-
-      const allLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-      for (const letter of allLetters) {
-        const hasEntries = groups.has(letter);
-        if (hasEntries) {
-          const a = document.createElement('a');
-          a.href = `#lettre-${letter}`;
-          a.textContent = letter;
-          a.dataset.letterNav = letter;
-          a.className = 'c-btn c-btn--letter';
-          inner.appendChild(a);
-        } else {
-          const span = document.createElement('span');
-          span.textContent = letter;
-          span.setAttribute('aria-disabled', 'true');
-          span.className = 'c-btn c-btn--letter cursor-default select-none';
-          inner.appendChild(span);
-        }
-      }
-
-      nav.appendChild(inner);
-    }
+    if (nav) buildLetterNav(nav, new Set(sortedLetters));
 
     // Sections par lettre
     let totalBooks = books.length;
@@ -169,36 +127,7 @@ import { createBookListItem, createCollectionListItem, updateCardCover } from '.
     if (loading) loading.hidden = true;
     if (count) count.textContent = `(${totalBooks})`;
 
-    // Indicateur de lettre active au scroll
-    function setActiveLetter(letter: string): void {
-      nav?.querySelectorAll<HTMLElement>('[data-letter-nav]').forEach((el) => {
-        el.classList.toggle('is-active', el.dataset.letterNav === letter);
-      });
-      const active = nav?.querySelector<HTMLElement>(`[data-letter-nav="${letter}"]`);
-      active?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const letter = (entry.target as HTMLElement).dataset.letterSection!;
-            setActiveLetter(letter);
-            break;
-          }
-        }
-      },
-      { rootMargin: '-80px 0px -70% 0px', threshold: 0 },
-    );
-
-    container.querySelectorAll<HTMLElement>('[data-letter-section]').forEach((section) => {
-      observer.observe(section);
-    });
-
-    nav?.addEventListener('click', (e) => {
-      const target = (e.target as HTMLElement).closest<HTMLElement>('[data-letter-nav]');
-      if (target?.dataset.letterNav) setActiveLetter(target.dataset.letterNav);
-    });
+    if (nav) observeLetterSections(container, nav);
 
     // Masquer les sections vides lors d'une recherche
     document.getElementById('search-input')?.addEventListener('input', () => {

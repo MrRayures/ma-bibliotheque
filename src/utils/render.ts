@@ -45,6 +45,13 @@ export function createBookCard(
   titleEl.textContent = book.title;
   overlay.appendChild(titleEl);
 
+  if (book.subtitle) {
+    const subtitleEl = document.createElement('p');
+    subtitleEl.className = 'c-bookcard__meta';
+    subtitleEl.textContent = book.subtitle;
+    overlay.appendChild(subtitleEl);
+  }
+
   if (!options.inCollection && book.collection) {
     const meta = document.createElement('p');
     meta.className = 'c-bookcard__meta';
@@ -224,4 +231,61 @@ export function createCollectionListItem(
 
   li.appendChild(article);
   return li;
+}
+
+export function buildLetterNav(nav: HTMLElement, letters: Set<string>): void {
+  nav.classList.remove('hidden');
+  const inner = document.createElement('div');
+  inner.className = 'flex gap-1 min-w-max';
+
+  for (const letter of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    if (letters.has(letter)) {
+      const a = document.createElement('a');
+      a.href = `#lettre-${letter}`;
+      a.textContent = letter;
+      a.dataset.letterNav = letter;
+      a.className = 'c-btn c-btn--letter';
+      inner.appendChild(a);
+    } else {
+      const span = document.createElement('span');
+      span.textContent = letter;
+      span.setAttribute('aria-disabled', 'true');
+      span.className = 'c-btn c-btn--letter cursor-default select-none';
+      inner.appendChild(span);
+    }
+  }
+
+  nav.appendChild(inner);
+}
+
+export function observeLetterSections(container: HTMLElement, nav: HTMLElement): void {
+  function setActiveLetter(letter: string): void {
+    nav.querySelectorAll<HTMLElement>('[data-letter-nav]').forEach((el) => {
+      el.classList.toggle('is-active', el.dataset.letterNav === letter);
+    });
+    const active = nav.querySelector<HTMLElement>(`[data-letter-nav="${letter}"]`);
+    active?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          const letter = (entry.target as HTMLElement).dataset.letterSection!;
+          setActiveLetter(letter);
+          break;
+        }
+      }
+    },
+    { rootMargin: '-80px 0px -70% 0px', threshold: 0 },
+  );
+
+  container.querySelectorAll<HTMLElement>('[data-letter-section]').forEach((section) => {
+    observer.observe(section);
+  });
+
+  nav.addEventListener('click', (e) => {
+    const target = (e.target as HTMLElement).closest<HTMLElement>('[data-letter-nav]');
+    if (target?.dataset.letterNav) setActiveLetter(target.dataset.letterNav);
+  });
 }

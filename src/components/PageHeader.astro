@@ -1,0 +1,32 @@
+---
+import SearchBar from './SearchBar.astro';
+
+interface Props {
+  title: string;
+  countId: string;
+  searchPlaceholder?: string;
+}
+
+const {
+  title,
+  countId,
+  searchPlaceholder = 'Rechercher...',
+} = Astro.props;
+---
+
+<div class="flex items-center justify-between">
+  <h1 class="text-2xl font-bold">
+    {title}
+    <span id={countId} class="text-sm text-text-light font-normal" aria-live="polite"></span>
+  </h1>
+  <slot name="actions" />
+</div>
+
+<div class="sticky top-15 z-10 -mx-4 bg-bg px-4 pb-3 pt-2">
+  <SearchBar placeholder={searchPlaceholder} />
+  <nav
+    id="letter-nav"
+    aria-label="Navigation par lettre"
+    class="mt-4 pb-1.5 hidden overflow-x-auto"
+  ></nav>
+</div>

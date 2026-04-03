@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import SearchBar from '../components/SearchBar.astro';
-import Button from '../components/Button.astro';
+import PageHeader from '../components/PageHeader.astro';
 import RenameDialog from '../components/RenameDialog.astro';
 import Icon from '../components/Icon.astro';
 ---
@@ -11,17 +10,7 @@ import Icon from '../components/Icon.astro';
   description="Vue par collections de ma bibliothèque personnelle"
 >
   <div class="mx-auto max-w-5xl px-4 pt-3 pb-28">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold ">
-        Collections
-        <span id="collection-count" class="text-sm text-text-light font-normal" aria-live="polite"></span>
-      </h1>
-      
-    </div>
-
-    <div class="sticky top-15 z-10 -mx-4 bg-bg px-4 pb-3 pt-2">
-      <SearchBar placeholder="Rechercher une collection..." />
-    </div>
+    <PageHeader title="Collections" countId="collection-count" searchPlaceholder="Rechercher une collection..." />
 
     <div id="collections-container" class="c-book-grid mt-6 flex flex-col gap-10"></div>
     <div id="collections-loading" class="c-book-grid mt-6 flex flex-col gap-10" aria-label="Chargement en cours" aria-busy="true">
@@ -57,12 +46,28 @@ import Icon from '../components/Icon.astro';
 import { getAllBooks } from '../utils/api';
 import { isLoggedIn } from '../utils/auth';
 import type { ViewMode } from '../utils/books';
-import { getCollectionViewMode, groupByCollection, setCollectionViewMode } from '../utils/books';
-import { createBookListItem, updateCardCover } from '../utils/render';
+import { getCollectionViewMode, getLetterKey, groupByCollection, setCollectionViewMode } from '../utils/books';
+import { buildLetterNav, createBookListItem, observeLetterSections, updateCardCover } from '../utils/render';
 
   document.addEventListener('astro:page-load', async () => {
     const UL_GRID    = 'grid grid-cols-[repeat(auto-fill,minmax(var(--card-size),1fr))] gap-3';
     const UL_COMPACT = 'flex gap-3 overflow-x-auto pb-2';
+
+    function updateSectionVisibility(): void {
+      document.querySelectorAll<HTMLElement>('[data-letter-section]').forEach((ls) => {
+        const hasVisible = [...ls.querySelectorAll<HTMLElement>('[data-search]')].some(
+          (item) => !item.hidden,
+        );
+        ls.hidden = !hasVisible;
+
+        const letter = ls.dataset.letterSection!;
+        const navLink = document.querySelector<HTMLElement>(`[data-letter-nav="${letter}"]`);
+        if (navLink) {
+          navLink.classList.toggle('opacity-30', !hasVisible);
+          navLink.classList.toggle('pointer-events-none', !hasVisible);
+        }
+      });
+    }
 
     function cloneIcon(id: string): Node {
       const tpl = document.getElementById(id) as HTMLTemplateElement;
@@ -203,29 +208,67 @@ import { createBookListItem, updateCardCover } from '../utils/render';
       return;
     }
 
+    // Grouper les collections par lettre
+    const letterGroups = new Map<string, [string, Book[]][]>();
     for (const [slug, collectionBooks] of collections) {
       const name = collectionBooks[0]?.collection?.name ?? '';
-      const section = createCollectionSection(name, slug, collectionBooks, loggedIn);
+      const letter = getLetterKey(name);
+      if (!letterGroups.has(letter)) letterGroups.set(letter, []);
+      letterGroups.get(letter)!.push([slug, collectionBooks]);
+    }
 
-      const grid = document.createElement('ul');
-      grid.className = UL_GRID;
-      grid.setAttribute('role', 'list');
+    const sortedLetters = [...letterGroups.keys()].sort((a, b) => {
+      if (a === '#') return 1;
+      if (b === '#') return -1;
+      return a.localeCompare(b, 'fr');
+    });
 
-      for (const book of collectionBooks) {
-        const coverUrl = book.cover;
-        const li = createBookListItem(book, coverUrl, book.title.toLowerCase(), loggedIn, { inCollection: true });
-        li.removeAttribute('data-search');
-        grid.appendChild(li);
+    const nav = document.getElementById('letter-nav');
+    if (nav) buildLetterNav(nav, new Set(sortedLetters));
+
+    for (const letter of sortedLetters) {
+      const letterSection = document.createElement('div');
+      letterSection.dataset.letterSection = letter;
+
+      const letterHeading = document.createElement('h2');
+      letterHeading.id = `lettre-${letter}`;
+      letterHeading.className = 'mb-3 font-semibold uppercase tracking-widest scroll-mt-20';
+      letterHeading.textContent = letter;
+      letterSection.appendChild(letterHeading);
+
+      const collectionsInLetter = letterGroups.get(letter)!;
+      collectionsInLetter.sort((a, b) => {
+        const nameA = a[1][0]?.collection?.name ?? '';
+        const nameB = b[1][0]?.collection?.name ?? '';
+        return nameA.localeCompare(nameB, 'fr', { sensitivity: 'base' });
+      });
+
+      for (const [slug, collectionBooks] of collectionsInLetter) {
+        const name = collectionBooks[0]?.collection?.name ?? '';
+        const section = createCollectionSection(name, slug, collectionBooks, loggedIn);
+
+        const grid = document.createElement('ul');
+        grid.className = UL_GRID;
+        grid.setAttribute('role', 'list');
+
+        for (const book of collectionBooks) {
+          const li = createBookListItem(book, book.cover, book.title.toLowerCase(), loggedIn, { inCollection: true });
+          li.removeAttribute('data-search');
+          grid.appendChild(li);
+        }
+
+        section.appendChild(grid);
+        letterSection.appendChild(section);
+
+        const savedMode = getCollectionViewMode(slug);
+        const btn = section.querySelector<HTMLButtonElement>('[data-view-toggle]');
+        if (btn) applyModeToSection(savedMode, section, btn);
       }
 
-      section.appendChild(grid);
-      container.appendChild(section);
-
-      // Appliquer le mode sauvegardé pour cette collection (compact par défaut)
-      const savedMode = getCollectionViewMode(slug);
-      const btn = section.querySelector<HTMLButtonElement>('[data-view-toggle]');
-      if (btn) applyModeToSection(savedMode, section, btn);
+      container.appendChild(letterSection);
     }
+
+    if (nav) observeLetterSections(container, nav);
 
     document.addEventListener('book-deleted', (e) => {
       const { id } = (e as CustomEvent<{ id: string }>).detail;
@@ -259,6 +302,10 @@ import { createBookListItem, updateCardCover } from '../utils/render';
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(refreshAllToggles, 150);
+    });
+
+    document.getElementById('search-input')?.addEventListener('input', () => {
+      updateSectionVisibility();
     });
 
     document.addEventListener('collection-renamed', () => {

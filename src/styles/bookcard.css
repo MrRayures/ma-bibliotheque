@@ -38,21 +38,23 @@
 
 /* Volume card inside expanded collection */
 [data-collection-member] .c-bookcard {
-  @apply border-2 border-tertiary;
+  @apply border-4 border-tertiary;
 }
 
 /* Collection card variant */
 .c-bookcard--collection {
+  @apply border-4 border-tertiary;
+
   .c-bookcard__overlay {
-    @apply inset-0 flex flex-col items-center justify-center bg-black/60 pt-0 pb-0;
+    @apply inset-0 flex flex-col items-start justify-end bg-black/60;
     background-image: none;
   }
 
   .c-bookcard__title {
-    @apply text-center text-sm text-tertiary;
+    @apply text-left text-sm text-tertiary;
   }
 
   .c-bookcard__meta {
-    @apply text-center;
+    @apply text-left;
   }
 }
