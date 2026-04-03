@@ -96,3 +96,10 @@ export function getCollectionViewMode(slug: string): ViewMode {
 export function setCollectionViewMode(slug: string, mode: ViewMode): void {
   localStorage.setItem(`collection-mode:${slug}`, mode);
 }
+
+export function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+}

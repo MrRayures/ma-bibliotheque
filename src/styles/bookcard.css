@@ -1,5 +1,9 @@
 /* Composants book card */
 
+.c-book-grid {
+  --card-size: clamp(6.5rem, 22vw, 10rem);
+}
+
 .c-bookcard {
   @apply relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-secondary transition-transform hover:scale-[1.02] hover:shadow-lg;
 }
@@ -17,7 +21,7 @@
 }
 
 .c-bookcard__volume-badge {
-  @apply absolute top-2 right-2 z-10 flex h-6 w-auto px-1.5 items-center justify-center rounded-full bg-tertiary font-semibold text-xs text-text;
+  @apply absolute top-2 right-2 z-0 flex h-6 w-auto px-1.5 items-center justify-center rounded-full bg-tertiary font-semibold text-xs text-text;
 }
 
 .c-bookcard__overlay {

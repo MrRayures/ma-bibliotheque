@@ -294,9 +294,11 @@ import Logo from '../components/Logo.astro';
 
 <script>
   import type { Book } from '../types/library';
-import { getBookByEan, getBookById, getCollectionNames, getEffectiveCoverUrl, saveBook, uploadCover, uploadCoverFile } from '../utils/api';
+import { getBookByEan, getBookById, getCollectionNames, saveBook, uploadCover, uploadCoverFile } from '../utils/api';
 import { isLoggedIn } from '../utils/auth';
+import { resizeImage } from '../utils/image';
 import type { SearchProgress, SearchResult } from '../utils/openLibrary';
+import { slugify } from '../utils/books';
 import { buildBook, extractCollectionName, extractVolume, lookupByEan, searchByTitle } from '../utils/openLibrary';
 import { translateToFrench } from '../utils/translate';
 
@@ -364,6 +366,10 @@ import { translateToFrench } from '../utils/translate';
 
     // ─── Helpers UI ──────────────────────────────────────────────────────────────
 
+    function escHtml(s: string): string {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     function showAlert(msg: string, type: 'alert' | 'success' | 'info' = 'info'): void {
       const modifier = type === 'info' ? '' : ` c-alert--${type}`;
       alertZone.className = `mb-6 c-alert${modifier}`;
@@ -377,17 +383,17 @@ import { translateToFrench } from '../utils/translate';
     }
 
     function showExistingBook(book: Book): void {
-      const coverUrl = getEffectiveCoverUrl(book);
+      const coverUrl = book.cover;
       const coverHtml = coverUrl
-        ? `<img src="${coverUrl}" alt="" class="h-full w-full object-cover" />`
-        : `<span class="text-lg font-bold text-text-light">${(book.title[0] ?? '?').toUpperCase()}</span>`;
+        ? `<img src="${escHtml(coverUrl)}" alt="" class="h-full w-full object-cover" />`
+        : `<span class="text-lg font-bold text-text-light">${escHtml((book.title[0] ?? '?').toUpperCase())}</span>`;
       existingBookPreview.innerHTML = `
-        <a href="/ajouter?id=${book.id}" class="c-search-result">
+        <a href="/ajouter?id=${escHtml(book.id)}" class="c-search-result">
           <div class="c-search-result-cover">${coverHtml}</div>
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium">${book.title}</p>
-            <p class="truncate text-xs text-text-light">${book.authors.join(', ') || 'Auteur inconnu'}</p>
-            ${book.ean ? `<p class="mt-1 font-mono text-xs text-text-light">${book.ean}</p>` : ''}
+            <p class="truncate text-sm font-medium">${escHtml(book.title)}</p>
+            <p class="truncate text-xs text-text-light">${escHtml(book.authors.join(', ') || 'Auteur inconnu')}</p>
+            ${book.ean ? `<p class="mt-1 font-mono text-xs text-text-light">${escHtml(book.ean)}</p>` : ''}
           </div>
         </a>`;
       existingBookPreview.classList.remove('hidden');
@@ -424,8 +430,11 @@ import { translateToFrench } from '../utils/translate';
     function setCoverPreview(url: string): void {
       coverLogo.classList.add('hidden');
       coverUploadBtn.classList.add('hidden');
-      const existing = coverPreview.querySelector('img');
-      if (existing) existing.remove();
+      const existing = coverPreview.querySelector('img') as HTMLImageElement | null;
+      if (existing) {
+        if (existing.src.startsWith('blob:')) URL.revokeObjectURL(existing.src);
+        existing.remove();
+      }
       const oldLoader = coverPreview.querySelector('[data-cover-loader]');
       if (oldLoader) oldLoader.remove();
 
@@ -455,24 +464,6 @@ import { translateToFrench } from '../utils/translate';
     function showCoverUploadBtn(): void {
       coverLogo.classList.add('hidden');
       coverUploadBtn.classList.remove('hidden');
-    }
-
-    function resizeImage(file: File, maxWidth: number): Promise<Blob | null> {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          const ratio = Math.min(maxWidth / img.naturalWidth, 1);
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.round(img.naturalWidth * ratio);
-          canvas.height = Math.round(img.naturalHeight * ratio);
-          const ctx = canvas.getContext('2d');
-          if (!ctx) { resolve(null); return; }
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.85);
-        };
-        img.onerror = () => resolve(null);
-        img.src = URL.createObjectURL(file);
-      });
     }
 
     coverUploadBtn.addEventListener('click', () => coverFileInput.click());
@@ -535,6 +526,8 @@ import { translateToFrench } from '../utils/translate';
       titleInput.readOnly = false;
       subtitleInput.readOnly = false;
       authorsInput.readOnly = false;
+      publisherInput.readOnly = false;
+      publishDateInput.readOnly = false;
       isManual = true;
       showForm();
       searchAccordion.open = false;
@@ -550,17 +543,11 @@ import { translateToFrench } from '../utils/translate';
       ]);
 
       bookEanInput.value = ean;
-      bookEanInput.readOnly = true;
       titleInput.value = title;
-      titleInput.readOnly = false;
       subtitleInput.value = subtitle;
-      subtitleInput.readOnly = result.subtitle !== null;
       authorsInput.value = translatedAuthors.join(', ');
-      authorsInput.readOnly = true;
       publisherInput.value = result.publisher ?? '';
-      publisherInput.readOnly = result.publisher !== null;
       publishDateInput.value = result.publishDate ?? '';
-      publishDateInput.readOnly = result.publishDate !== null;
 
       const detectedVolume = extractVolume(result.title);
       if (detectedVolume !== null) {
@@ -698,12 +685,12 @@ import { translateToFrench } from '../utils/translate';
             data-index="${i}"
           >
             <div class="c-search-result-cover">
-              ${r.coverUrl ? `<img src="${r.coverUrl}" alt="" class="h-full w-full object-cover" />` : ''}
+              ${r.coverUrl ? `<img src="${escHtml(r.coverUrl)}" alt="" class="h-full w-full object-cover" />` : ''}
             </div>
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium">${r.title}</p>
-              <p class="truncate text-xs text-text-light">${r.authors.join(', ') || 'Auteur inconnu'}</p>
-              ${r.ean ? `<p class="mt-1 font-mono text-xs text-text-light">${r.ean}</p>` : '<p class="mt-1 text-xs text-alert">Pas d\'ISBN</p>'}
+              <p class="truncate text-sm font-medium">${escHtml(r.title)}</p>
+              <p class="truncate text-xs text-text-light">${escHtml(r.authors.join(', ') || 'Auteur inconnu')}</p>
+              ${r.ean ? `<p class="mt-1 font-mono text-xs text-text-light">${escHtml(r.ean)}</p>` : '<p class="mt-1 text-xs text-alert">Pas d\'ISBN</p>'}
             </div>
           </button>`,
         )
@@ -792,9 +779,7 @@ import { translateToFrench } from '../utils/translate';
         showAlert('Livre introuvable.', 'alert');
         return;
       }
-      const collectionSlug = data.collection
-        ? data.collection.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-        : null;
+      const collectionSlug = data.collection ? slugify(data.collection) : null;
       const updatedBook: Book = {
         ...existing,
         title: data.title,
@@ -920,7 +905,7 @@ import { translateToFrench } from '../utils/translate';
           volumeRow.classList.remove('hidden');
         }
 
-        const existingCoverUrl = getEffectiveCoverUrl(existing);
+        const existingCoverUrl = existing.cover;
         if (existingCoverUrl) setCoverPreview(existingCoverUrl);
         coverLogo.classList.add('hidden');
         coverUploadBtn.textContent = existingCoverUrl ? 'Modifier' : 'Ajouter';

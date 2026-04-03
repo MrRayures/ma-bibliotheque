@@ -1,5 +1,6 @@
 import type { Book } from '../types/library';
 import { getAuthToken } from './auth';
+import { slugify } from './books';
 
 function getApiUrl(): string {
   return `${window.location.origin}/api/library.php`;
@@ -81,10 +82,7 @@ export async function clearAllBooks(): Promise<void> {
 }
 
 export async function renameCollection(oldSlug: string, newName: string): Promise<void> {
-  const newSlug = newName
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '');
+  const newSlug = slugify(newName);
   const books = await fetchBooks();
   await writeBooks(
     books.map((b) =>
@@ -188,10 +186,6 @@ export async function uploadCoverFile(bookId: string, blob: Blob): Promise<strin
   } catch {
     return null;
   }
-}
-
-export function getEffectiveCoverUrl(book: Book): string | null {
-  return book.cover;
 }
 
 export async function exportToJson(): Promise<string> {

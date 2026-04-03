@@ -1,4 +1,5 @@
 import type { Book } from '../types/library';
+import { slugify } from './books';
 
 interface OpenLibraryBook {
   url?: string;
@@ -239,12 +240,7 @@ export function buildBook(
   collectionName: string | null,
   collectionVolume: number | null,
 ): Book {
-  const collectionSlug = collectionName
-    ? collectionName
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '')
-    : null;
+  const collectionSlug = collectionName ? slugify(collectionName) : null;
 
   return {
     id: crypto.randomUUID(),

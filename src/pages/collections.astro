@@ -23,8 +23,8 @@ import Icon from '../components/Icon.astro';
       <SearchBar placeholder="Rechercher une collection..." />
     </div>
 
-    <div id="collections-container" class="mt-6 flex flex-col gap-10" style="--card-size: clamp(6.5rem, 22vw, 10rem);"></div>
-    <div id="collections-loading" class="mt-6 flex flex-col gap-10" style="--card-size: clamp(6.5rem, 22vw, 10rem);" aria-label="Chargement en cours" aria-busy="true">
+    <div id="collections-container" class="c-book-grid mt-6 flex flex-col gap-10"></div>
+    <div id="collections-loading" class="c-book-grid mt-6 flex flex-col gap-10" aria-label="Chargement en cours" aria-busy="true">
       {Array.from({ length: 2 }).map(() => (
         <div>
           <div class="mb-4">
@@ -54,7 +54,7 @@ import Icon from '../components/Icon.astro';
 
 <script>
   import type { Book } from '../types/library';
-import { getAllBooks, getEffectiveCoverUrl } from '../utils/api';
+import { getAllBooks } from '../utils/api';
 import { isLoggedIn } from '../utils/auth';
 import type { ViewMode } from '../utils/books';
 import { getCollectionViewMode, groupByCollection, setCollectionViewMode } from '../utils/books';
@@ -212,7 +212,7 @@ import { createBookListItem, updateCardCover } from '../utils/render';
       grid.setAttribute('role', 'list');
 
       for (const book of collectionBooks) {
-        const coverUrl = getEffectiveCoverUrl(book);
+        const coverUrl = book.cover;
         const li = createBookListItem(book, coverUrl, book.title.toLowerCase(), loggedIn, { inCollection: true });
         li.removeAttribute('data-search');
         grid.appendChild(li);
