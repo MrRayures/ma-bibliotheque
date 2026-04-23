@@ -9,7 +9,7 @@
 }
 
 .c-bookcard__cover {
-  @apply h-full w-full object-cover;
+  @apply h-full w-full object-cover object-top;
 }
 
 .c-bookcard__placeholder {
@@ -21,7 +21,7 @@
 }
 
 .c-bookcard__volume-badge {
-  @apply absolute top-2 right-2 z-0 flex h-6 w-auto px-1.5 items-center justify-center rounded-full bg-tertiary font-semibold text-xs text-text;
+  @apply absolute top-2 right-2 z-1 flex h-6 w-auto px-1.5 items-center justify-center rounded-full bg-tertiary font-semibold text-xs text-text;
 }
 
 .c-bookcard__overlay {
@@ -45,11 +45,6 @@
 .c-bookcard--collection {
   @apply border-4 border-tertiary;
 
-  .c-bookcard__overlay {
-    @apply inset-0 flex flex-col items-start justify-end bg-black/60;
-    background-image: none;
-  }
-
   .c-bookcard__title {
     @apply text-left text-sm text-tertiary;
   }
@@ -57,4 +52,31 @@
   .c-bookcard__meta {
     @apply text-left;
   }
+}
+
+/* Collection list item (wraps .c-bookcard--collection) */
+.c-collection-item {
+  @apply relative;
+}
+
+.c-collection-item__icon {
+  @apply absolute left-1/2 top-1/2 z-1 h-12 w-12 -translate-x-1/2 -translate-y-1/2
+         pointer-events-none text-tertiary drop-shadow-lg rounded-full border-2 border-tertiary;
+}
+
+.c-collection-item__icon--minus {
+  @apply hidden;
+}
+
+.c-collection-item.is-expanded .c-collection-item__icon--plus {
+  @apply hidden;
+}
+
+.c-collection-item.is-expanded .c-collection-item__icon--minus {
+  @apply block;
+}
+
+/* Collection section spacing (collections.astro) */
+section[data-collection] {
+  @apply mb-8;
 }

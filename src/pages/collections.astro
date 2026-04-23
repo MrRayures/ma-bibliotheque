@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
-import RenameDialog from '../components/RenameDialog.astro';
+import CollectionDialog from '../components/CollectionDialog.astro';
 import Icon from '../components/Icon.astro';
 ---
 
@@ -34,7 +34,7 @@ import Icon from '../components/Icon.astro';
     </div>
   </div>
 
-  <RenameDialog />
+  <CollectionDialog />
 
   <template id="tpl-icon-list"><Icon name="list-view" size={16} /></template>
   <template id="tpl-icon-grid"><Icon name="grid-view" size={16} /></template>
@@ -150,17 +150,23 @@ import { buildLetterNav, createBookListItem, observeLetterSections, updateCardCo
 
       const heading = document.createElement('h2');
       heading.className = 'text-2xl font-bold';
-      heading.textContent = name;
+      const total = books[0]?.collection?.totalVolumes;
+      const incomplete = total != null && total > 0 && books.length !== total;
+      heading.textContent = incomplete ? `📚 ${name}` : name;
       row.appendChild(heading);
 
       if (loggedIn) {
         const renameBtn = document.createElement('button');
         renameBtn.type = 'button';
         renameBtn.setAttribute('aria-label', `Renommer ${name}`);
-        renameBtn.className = 'c-btn c-btn--ghost c-btn--icon-sm';
+        renameBtn.className = 'c-btn c-btn--secondary-outline c-btn--icon-sm shrink-0';
         renameBtn.appendChild(cloneIcon('tpl-icon-edit'));
         renameBtn.addEventListener('click', () => {
-          document.dispatchEvent(new CustomEvent('open-rename-dialog', { detail: { slug, name } }));
+          document.dispatchEvent(
+            new CustomEvent('open-collection-dialog', {
+              detail: { slug, name, totalVolumes: total ?? null },
+            }),
+          );
         });
         row.appendChild(renameBtn);
       }
@@ -183,7 +189,8 @@ import { buildLetterNav, createBookListItem, observeLetterSections, updateCardCo
 
       const subtitle = document.createElement('span');
       subtitle.className = 'text-sm text-text-light font-normal';
-      subtitle.textContent = ` (${books.length})`;
+      subtitle.textContent =
+        total && total > 0 ? ` (${books.length}/${total})` : ` (${books.length})`;
       heading.appendChild(subtitle);
 
       section.appendChild(header);
@@ -308,8 +315,15 @@ import { buildLetterNav, createBookListItem, observeLetterSections, updateCardCo
       updateSectionVisibility();
     });
 
-    document.addEventListener('collection-renamed', () => {
+    document.addEventListener('collection-updated', () => {
+      sessionStorage.setItem('collections-scroll', String(window.scrollY));
       window.location.reload();
     });
+
+    const savedScroll = sessionStorage.getItem('collections-scroll');
+    if (savedScroll !== null) {
+      sessionStorage.removeItem('collections-scroll');
+      window.scrollTo({ top: Number(savedScroll), behavior: 'instant' });
+    }
   });
 </script>

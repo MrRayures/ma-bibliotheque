@@ -2,6 +2,7 @@ export interface BookCollection {
   name: string;
   slug: string;
   volume: number;
+  totalVolumes?: number | null;
 }
 
 export interface Book {

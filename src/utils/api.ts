@@ -7,7 +7,7 @@ function getApiUrl(): string {
 }
 
 async function fetchBooks(): Promise<Book[]> {
-  const res = await fetch(getApiUrl());
+  const res = await fetch(getApiUrl(), { cache: 'no-store' });
   if (!res.ok) return [];
   try {
     const data = (await res.json()) as { books?: Book[] };
@@ -81,13 +81,26 @@ export async function clearAllBooks(): Promise<void> {
   await writeBooks([]);
 }
 
-export async function renameCollection(oldSlug: string, newName: string): Promise<void> {
-  const newSlug = slugify(newName);
+export interface CollectionUpdate {
+  name: string;
+  totalVolumes?: number | null;
+}
+
+export async function updateCollection(oldSlug: string, update: CollectionUpdate): Promise<void> {
+  const newSlug = slugify(update.name);
   const books = await fetchBooks();
   await writeBooks(
     books.map((b) =>
       b.collection?.slug === oldSlug
-        ? { ...b, collection: { ...b.collection, name: newName, slug: newSlug } }
+        ? {
+            ...b,
+            collection: {
+              ...b.collection,
+              name: update.name,
+              slug: newSlug,
+              totalVolumes: update.totalVolumes ?? null,
+            },
+          }
         : b,
     ),
   );

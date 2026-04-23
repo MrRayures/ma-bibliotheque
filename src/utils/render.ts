@@ -123,11 +123,26 @@ export function createCollectionListItem(
   getCoverUrl: (book: Book) => string | null,
 ): HTMLLIElement {
   const li = document.createElement('li');
+  li.className = 'c-collection-item';
   const searchValue = [name, ...books.map((b) => `${b.title} ${b.authors.join(' ')}`)].join(' ');
   li.dataset.search = searchValue.toLowerCase();
   li.dataset.collectionSlug = slug;
 
   const firstCoverUrl = books[0] ? getCoverUrl(books[0]) : null;
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const buildIcon = (iconName: string, modifier: string): SVGSVGElement => {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('fill', 'none');
+    svg.classList.add('c-collection-item__icon', `c-collection-item__icon--${modifier}`);
+    const use = document.createElementNS(SVG_NS, 'use');
+    use.setAttribute('href', `/icons/sprite.svg#${iconName}`);
+    svg.appendChild(use);
+    return svg;
+  };
+  li.appendChild(buildIcon('add', 'plus'));
+  li.appendChild(buildIcon('minus', 'minus'));
 
   const article = document.createElement('article');
   article.className = 'c-bookcard c-bookcard--collection';
@@ -265,6 +280,11 @@ export function observeLetterSections(container: HTMLElement, nav: HTMLElement):
     });
     const active = nav.querySelector<HTMLElement>(`[data-letter-nav="${letter}"]`);
     active?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+
+    const nextHash = `#lettre-${letter}`;
+    if (window.location.hash !== nextHash) {
+      window.history.replaceState(null, '', nextHash);
+    }
   }
 
   const observer = new IntersectionObserver(

@@ -1,0 +1,117 @@
+---
+import Button from './Button.astro';
+import Icon from './Icon.astro';
+---
+
+<dialog
+  id="collection-dialog"
+  class="c-dialog  c-dialog--md"
+  aria-labelledby="collection-title"
+>
+  <div class="c-dialog__header">
+    <h2 id="collection-title" class="c-dialog__title">Modifier la collection</h2>
+    <Button id="collection-close" variant="ghost" size="lg" aria-label="Fermer">
+      <Icon name="close" size={24} slot="icon" />
+    </Button>
+  </div>
+  <div class="c-dialog__body">
+    <label for="collection-name-input" class="text-sm text-text-light">Nouveau nom</label>
+    <input
+      type="text"
+      id="collection-name-input"
+      autocomplete="off"
+      class="c-input"
+    />
+    <label for="collection-total-input" class="text-sm text-text-light">
+      Nombre de tomes parus (optionnel)
+    </label>
+    <input
+      type="number"
+      id="collection-total-input"
+      min="1"
+      inputmode="numeric"
+      autocomplete="off"
+      class="c-input"
+    />
+    <div class="flex gap-2">
+      <Button id="collection-cancel" variant="secondary-outline" size="md" class="flex-1">
+        Annuler
+      </Button>
+      <Button id="collection-confirm" variant="primary" size="md" class="flex-1">
+        Enregistrer
+      </Button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  import { updateCollection } from '../utils/api';
+
+  document.addEventListener('astro:page-load', () => {
+    const dialog = document.getElementById('collection-dialog') as HTMLDialogElement;
+    const nameInput = document.getElementById('collection-name-input') as HTMLInputElement;
+    const totalInput = document.getElementById('collection-total-input') as HTMLInputElement;
+
+    let activeSlug: string | null = null;
+    let activeName: string | null = null;
+    let activeTotal: number | null = null;
+
+    function close(): void {
+      dialog.close();
+      activeSlug = null;
+      activeName = null;
+      activeTotal = null;
+    }
+
+    document.addEventListener('open-collection-dialog', (e) => {
+      const { slug, name, totalVolumes } = (
+        e as CustomEvent<{ slug: string; name: string; totalVolumes?: number | null }>
+      ).detail;
+      activeSlug = slug;
+      activeName = name;
+      activeTotal = totalVolumes ?? null;
+      nameInput.value = name;
+      totalInput.value = totalVolumes ? String(totalVolumes) : '';
+      dialog.showModal();
+      nameInput.select();
+    });
+
+    document.getElementById('collection-close')?.addEventListener('click', close);
+    document.getElementById('collection-cancel')?.addEventListener('click', close);
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) close();
+    });
+
+    const handleKeydown = (e: KeyboardEvent): void => {
+      if (e.key === 'Enter') document.getElementById('collection-confirm')?.click();
+      if (e.key === 'Escape') close();
+    };
+    nameInput.addEventListener('keydown', handleKeydown);
+    totalInput.addEventListener('keydown', handleKeydown);
+
+    document.getElementById('collection-confirm')?.addEventListener('click', async () => {
+      if (!activeSlug) return;
+      const newName = nameInput.value.trim();
+      const rawTotal = totalInput.value.trim();
+      const parsedTotal = rawTotal ? Number.parseInt(rawTotal, 10) : null;
+      const newTotal = parsedTotal && parsedTotal > 0 ? parsedTotal : null;
+
+      if (!newName) {
+        close();
+        return;
+      }
+      if (newName === activeName && newTotal === activeTotal) {
+        close();
+        return;
+      }
+
+      await updateCollection(activeSlug, { name: newName, totalVolumes: newTotal });
+      close();
+      document.dispatchEvent(
+        new CustomEvent('collection-updated', {
+          detail: { slug: activeSlug, newName, totalVolumes: newTotal },
+        }),
+      );
+    });
+  });
+</script>

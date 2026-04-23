@@ -795,7 +795,15 @@ import { translateToFrench } from '../utils/translate';
         updatedBook.cover = await uploadCoverFile(updatedBook.id, pendingCoverBlob);
       }
       await saveBook(updatedBook);
-      window.location.href = '/';
+      navigateBack();
+    }
+
+    function navigateBack(): void {
+      if (document.referrer.startsWith(window.location.origin)) {
+        window.history.back();
+      } else {
+        window.location.href = '/';
+      }
     }
 
     async function handleCreate(data: ReturnType<typeof collectFormData>): Promise<void> {
@@ -879,6 +887,11 @@ import { translateToFrench } from '../utils/translate';
 
     submitBtn.addEventListener('click', handleSubmit);
     addAnotherBtn.addEventListener('click', resetForm);
+
+    document.getElementById('cancel-btn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigateBack();
+    });
 
     // ─── Init ────────────────────────────────────────────────────────────────────
 

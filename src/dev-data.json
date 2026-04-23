@@ -6,7 +6,7 @@
       "subtitle": null,
       "authors": ["Katsuhiro Otomo"],
       "ean": "9782723428071",
-      "collection": { "name": "Akira", "slug": "akira", "volume": 1 },
+      "collection": { "name": "Akira", "slug": "akira", "volume": 1, "totalVolumes": 9 },
       "openLibraryUrl": "https://openlibrary.org/isbn/9782723428071",
       "cover": null,
       "addedAt": "2024-11-10T10:00:00.000Z"
@@ -17,7 +17,7 @@
       "subtitle": null,
       "authors": ["Katsuhiro Otomo"],
       "ean": "9782723428088",
-      "collection": { "name": "Akira", "slug": "akira", "volume": 2 },
+      "collection": { "name": "Akira", "slug": "akira", "volume": 2, "totalVolumes": 9 },
       "openLibraryUrl": "https://openlibrary.org/isbn/9782723428088",
       "cover": null,
       "addedAt": "2024-11-10T10:05:00.000Z"
@@ -28,7 +28,7 @@
       "subtitle": null,
       "authors": ["Katsuhiro Otomo"],
       "ean": "9782723428095",
-      "collection": { "name": "Akira", "slug": "akira", "volume": 3 },
+      "collection": { "name": "Akira", "slug": "akira", "volume": 3, "totalVolumes": 9 },
       "openLibraryUrl": "https://openlibrary.org/isbn/9782723428095",
       "cover": null,
       "addedAt": "2024-11-10T10:10:00.000Z"
@@ -39,7 +39,7 @@
       "subtitle": null,
       "authors": ["Katsuhiro Otomo"],
       "ean": "9782723428101",
-      "collection": { "name": "Akira", "slug": "akira", "volume": 4 },
+      "collection": { "name": "Akira", "slug": "akira", "volume": 4, "totalVolumes": 9 },
       "openLibraryUrl": "https://openlibrary.org/isbn/9782723428101",
       "cover": null,
       "addedAt": "2024-11-10T10:15:00.000Z"
@@ -50,7 +50,7 @@
       "subtitle": null,
       "authors": ["Katsuhiro Otomo"],
       "ean": "9782723428118",
-      "collection": { "name": "Akira", "slug": "akira", "volume": 5 },
+      "collection": { "name": "Akira", "slug": "akira", "volume": 5, "totalVolumes": 9 },
       "openLibraryUrl": "https://openlibrary.org/isbn/9782723428118",
       "cover": null,
       "addedAt": "2024-11-10T10:20:00.000Z"
@@ -61,7 +61,7 @@
       "subtitle": null,
       "authors": ["Katsuhiro Otomo"],
       "ean": "9782723428125",
-      "collection": { "name": "Akira", "slug": "akira", "volume": 6 },
+      "collection": { "name": "Akira", "slug": "akira", "volume": 6, "totalVolumes": 9 },
       "openLibraryUrl": "https://openlibrary.org/isbn/9782723428125",
       "cover": null,
       "addedAt": "2024-11-10T10:25:00.000Z"
