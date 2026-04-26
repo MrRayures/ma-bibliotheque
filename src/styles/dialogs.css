@@ -18,15 +18,15 @@ html:has(dialog[open]) {
   animation: backdrop-in 0.18s ease forwards;
 }
 
-.c-dialog__header {
+.c-dialog-header {
   @apply flex items-center justify-between border-b border-neutral-100 px-5 py-4;
 }
 
-.c-dialog__title {
+.c-dialog-title {
   @apply text-2xl font-semibold;
 }
 
-.c-dialog__body {
+.c-dialog-body {
   @apply flex flex-col gap-3 p-5;
 }
 
@@ -48,13 +48,13 @@ html:has(dialog[open]) {
   @apply max-w-2xl;
 }
 
-.c-book-dialog__layout {
+.c-book-dialog-layout {
   @apply flex flex-col h-full relative;
 
   @apply sm:pl-80;
 }
 
-.c-book-dialog__cover {
+.c-book-dialog-cover {
   @apply relative w-full shrink-0 overflow-hidden bg-secondary flex items-center justify-center;
 
   @apply sm:absolute sm:w-80 sm:left-0 sm:top-0 h-full;
@@ -71,11 +71,11 @@ html:has(dialog[open]) {
   }
 }
 
-.c-book-dialog__content {
+.c-book-dialog-content {
   @apply flex-1;
 }
 
-.c-book-dialog__actions {
+.c-book-dialog-actions {
   @apply sticky bottom-0 flex gap-2 border-t border-neutral-100 bg-white px-5 py-4;
 }
 

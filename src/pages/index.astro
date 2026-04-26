@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
+import SkeletonCard from '../components/SkeletonCard.astro';
 ---
 
 <BaseLayout title="Livres — Ma Bibliothèque">
@@ -15,9 +16,7 @@ import PageHeader from '../components/PageHeader.astro';
       aria-label="Chargement en cours"
       aria-busy="true"
     >
-      {Array.from({ length: 10 }).map(() => (
-        <div class="aspect-square animate-pulse rounded-lg bg-neutral-200"></div>
-      ))}
+      {Array.from({ length: 10 }).map(() => <SkeletonCard />)}
     </div>
     <div id="books-empty" class="mt-16 flex flex-col items-center gap-4 text-center" hidden>
       <p class="text-sm">C'est vide par ici ! <br>Ajouter un livre en cliquant sur le bouton ci-dessous.</p>
@@ -28,8 +27,9 @@ import PageHeader from '../components/PageHeader.astro';
 <script>
   import { getAllBooks } from '../utils/api';
 import { isLoggedIn } from '../utils/auth';
-import { buildIndexEntries, groupEntriesByLetter } from '../utils/books';
-import { buildLetterNav, createBookListItem, createCollectionListItem, observeLetterSections, updateCardCover } from '../utils/render';
+import { groupByLetter } from '../utils/books';
+import { addPageScopedListener } from '../utils/dom-events';
+import { buildLetterNav, createBookListItem, observeLetterSections, updateCardCover } from '../utils/render';
 
   document.addEventListener('astro:page-load', async () => {
     function updateSectionVisibility(): void {
@@ -68,8 +68,7 @@ import { buildLetterNav, createBookListItem, createCollectionListItem, observeLe
       return;
     }
 
-    const entries = buildIndexEntries(books);
-    const groups = groupEntriesByLetter(entries);
+    const groups = groupByLetter(books);
 
     const sortedLetters = [...groups.keys()].sort((a, b) => {
       if (a === '#') return 1;
@@ -97,26 +96,16 @@ import { buildLetterNav, createBookListItem, createCollectionListItem, observeLe
       ul.setAttribute('role', 'list');
       ul.setAttribute('aria-label', `Livres — ${letter}`);
 
-      for (const entry of groups.get(letter)!) {
-        if (entry.kind === 'book') {
-          const coverUrl = entry.book.cover;
-          const li = createBookListItem(
-            entry.book,
-            coverUrl,
-            `${entry.book.title} ${entry.book.authors.join(' ')}`,
-            loggedIn,
-          );
-          ul.appendChild(li);
-        } else {
-          const li = createCollectionListItem(
-            entry.name,
-            entry.slug,
-            entry.books,
-            loggedIn,
-            (b) => b.cover,
-          );
-          ul.appendChild(li);
+      for (const book of groups.get(letter)!) {
+        const inCollection = book.collection !== null;
+        const searchValue = book.collection
+          ? `${book.collection.name} ${book.title} ${book.authors.join(' ')}`
+          : `${book.title} ${book.authors.join(' ')}`;
+        const li = createBookListItem(book, book.cover, searchValue, loggedIn, { inCollection });
+        if (book.collection) {
+          li.dataset.collectionMember = book.collection.slug;
         }
+        ul.appendChild(li);
       }
 
       section.appendChild(ul);
@@ -135,8 +124,8 @@ import { buildLetterNav, createBookListItem, createCollectionListItem, observeLe
     });
 
     // Suppression d'un livre
-    document.addEventListener('book-deleted', (e) => {
-      const { id } = (e as CustomEvent<{ id: string }>).detail;
+    addPageScopedListener<CustomEvent<{ id: string }>>(document, 'book-deleted', (e) => {
+      const { id } = e.detail;
       const li = container.querySelector(`li[data-book-id="${id}"]`);
       if (li) {
         const section = li.closest<HTMLElement>('[data-letter-section]');
@@ -156,13 +145,17 @@ import { buildLetterNav, createBookListItem, createCollectionListItem, observeLe
     });
 
     // Mise à jour cover après upload
-    document.addEventListener('book-cover-updated', (e) => {
-      const { id, coverUrl } = (e as CustomEvent<{ id: string; coverUrl: string }>).detail;
-      const li = container.querySelector<HTMLElement>(`li[data-book-id="${id}"]`);
-      if (!li) return;
-      li.dataset.coverUrl = coverUrl;
-      const card = li.querySelector<HTMLElement>('.c-bookcard');
-      if (card) updateCardCover(card, coverUrl);
-    });
+    addPageScopedListener<CustomEvent<{ id: string; coverUrl: string }>>(
+      document,
+      'book-cover-updated',
+      (e) => {
+        const { id, coverUrl } = e.detail;
+        const li = container.querySelector<HTMLElement>(`li[data-book-id="${id}"]`);
+        if (!li) return;
+        li.dataset.coverUrl = coverUrl;
+        const card = li.querySelector<HTMLElement>('.c-bookcard');
+        if (card) updateCardCover(card, coverUrl);
+      },
+    );
   });
 </script>

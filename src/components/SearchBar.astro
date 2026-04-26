@@ -9,14 +9,14 @@ const { placeholder = 'Rechercher...' } = Astro.props;
 ---
 
 <div class="relative">
-  <Icon name="search" size={24} class="absolute left-3 top-1/2 -translate-y-1/2 " />
+  <label for="search-input" class="sr-only">{placeholder}</label>
+  <Icon name="search" size={24} class="absolute left-3 top-1/2 -translate-y-1/2" />
   <input
     type="search"
     id="search-input"
     placeholder={placeholder}
     autocomplete="off"
     class="c-input--search"
-    aria-label={placeholder}
   />
 </div>
 

@@ -17,13 +17,13 @@ export function createBookCard(
     img.width = 200;
     img.height = 200;
     img.loading = 'lazy';
-    img.className = 'c-bookcard__cover';
+    img.className = 'c-bookcard-cover';
     article.appendChild(img);
   } else {
     const placeholder = document.createElement('div');
-    placeholder.className = 'c-bookcard__placeholder';
+    placeholder.className = 'c-bookcard-placeholder';
     const letter = document.createElement('span');
-    letter.className = 'c-bookcard__placeholder-letter';
+    letter.className = 'c-bookcard-placeholder-letter';
     letter.setAttribute('aria-hidden', 'true');
     letter.textContent = (book.title[0] ?? '?').toUpperCase();
     placeholder.appendChild(letter);
@@ -32,29 +32,29 @@ export function createBookCard(
 
   if (options.inCollection && book.collection) {
     const badge = document.createElement('span');
-    badge.className = 'c-bookcard__volume-badge';
+    badge.className = 'c-bookcard-volume-badge';
     badge.textContent = `T.${book.collection.volume}`;
     article.appendChild(badge);
   }
 
   const overlay = document.createElement('div');
-  overlay.className = 'c-bookcard__overlay';
+  overlay.className = 'c-bookcard-overlay';
 
   const titleEl = document.createElement('p');
-  titleEl.className = 'c-bookcard__title';
+  titleEl.className = 'c-bookcard-title';
   titleEl.textContent = book.title;
   overlay.appendChild(titleEl);
 
   if (book.subtitle) {
     const subtitleEl = document.createElement('p');
-    subtitleEl.className = 'c-bookcard__meta';
+    subtitleEl.className = 'c-bookcard-meta';
     subtitleEl.textContent = book.subtitle;
     overlay.appendChild(subtitleEl);
   }
 
   if (!options.inCollection && book.collection) {
     const meta = document.createElement('p');
-    meta.className = 'c-bookcard__meta';
+    meta.className = 'c-bookcard-meta';
     meta.textContent = `${book.collection.name}\u00a0· T.\u00a0${book.collection.volume}`;
     overlay.appendChild(meta);
   }
@@ -64,12 +64,12 @@ export function createBookCard(
 }
 
 export function updateCardCover(card: HTMLElement, newCoverUrl: string): void {
-  const existing = card.querySelector('.c-bookcard__cover') as HTMLImageElement | null;
+  const existing = card.querySelector('.c-bookcard-cover') as HTMLImageElement | null;
   if (existing) {
     existing.src = newCoverUrl;
     return;
   }
-  const placeholder = card.querySelector('.c-bookcard__placeholder');
+  const placeholder = card.querySelector('.c-bookcard-placeholder');
   if (placeholder) placeholder.remove();
   const img = document.createElement('img');
   img.src = newCoverUrl;
@@ -77,7 +77,7 @@ export function updateCardCover(card: HTMLElement, newCoverUrl: string): void {
   img.width = 200;
   img.height = 200;
   img.loading = 'lazy';
-  img.className = 'c-bookcard__cover';
+  img.className = 'c-bookcard-cover';
   card.insertBefore(img, card.firstChild);
 }
 
@@ -158,13 +158,13 @@ export function createCollectionListItem(
     img.width = 200;
     img.height = 200;
     img.loading = 'lazy';
-    img.className = 'c-bookcard__cover';
+    img.className = 'c-bookcard-cover';
     article.appendChild(img);
   } else {
     const placeholder = document.createElement('div');
-    placeholder.className = 'c-bookcard__placeholder';
+    placeholder.className = 'c-bookcard-placeholder';
     const letter = document.createElement('span');
-    letter.className = 'c-bookcard__placeholder-letter';
+    letter.className = 'c-bookcard-placeholder-letter';
     letter.setAttribute('aria-hidden', 'true');
     letter.textContent = (name[0] ?? '?').toUpperCase();
     placeholder.appendChild(letter);
@@ -172,15 +172,15 @@ export function createCollectionListItem(
   }
 
   const overlay = document.createElement('div');
-  overlay.className = 'c-bookcard__overlay';
+  overlay.className = 'c-bookcard-overlay';
 
   const titleEl = document.createElement('p');
-  titleEl.className = 'c-bookcard__title';
+  titleEl.className = 'c-bookcard-title';
   titleEl.textContent = name;
   overlay.appendChild(titleEl);
 
   const countEl = document.createElement('p');
-  countEl.className = 'c-bookcard__meta';
+  countEl.className = 'c-bookcard-meta';
   countEl.textContent = `${books.length} tome${books.length > 1 ? 's' : ''}`;
   overlay.appendChild(countEl);
 
@@ -274,12 +274,24 @@ export function buildLetterNav(nav: HTMLElement, letters: Set<string>): void {
 }
 
 export function observeLetterSections(container: HTMLElement, nav: HTMLElement): void {
+  // Le smooth scroll horizontal du nav est différé après l'arrêt du scroll page
+  // pour éviter la concurrence d'animations qui rendait le scroll vertical saccadé.
+  let navScrollTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function scheduleNavScroll(letter: string): void {
+    if (navScrollTimer) clearTimeout(navScrollTimer);
+    navScrollTimer = setTimeout(() => {
+      const target = nav.querySelector<HTMLElement>(`[data-letter-nav="${letter}"]`);
+      target?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+      navScrollTimer = null;
+    }, 150);
+  }
+
   function setActiveLetter(letter: string): void {
     nav.querySelectorAll<HTMLElement>('[data-letter-nav]').forEach((el) => {
       el.classList.toggle('is-active', el.dataset.letterNav === letter);
     });
-    const active = nav.querySelector<HTMLElement>(`[data-letter-nav="${letter}"]`);
-    active?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+    scheduleNavScroll(letter);
 
     const nextHash = `#lettre-${letter}`;
     if (window.location.hash !== nextHash) {

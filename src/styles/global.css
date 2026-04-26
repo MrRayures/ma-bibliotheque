@@ -19,6 +19,9 @@
   --color-border: #eef0fb;
   --color-text: #2d2d2d;
   --color-text-light: #666666;
+
+  /* Hauteur du header sticky — expose h-header / top-header / scroll-mt-header etc. */
+  --spacing-header: 3.75rem;
 }
 
 body {
