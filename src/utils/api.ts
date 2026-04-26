@@ -6,14 +6,28 @@ function getApiUrl(): string {
   return `${window.location.origin}/api/library.php`;
 }
 
+let booksCache: Book[] | null = null;
+let booksInflight: Promise<Book[]> | null = null;
+
 async function fetchBooks(): Promise<Book[]> {
-  const res = await fetch(getApiUrl(), { cache: 'no-store' });
-  if (!res.ok) return [];
+  if (booksCache) return booksCache;
+  if (booksInflight) return booksInflight;
+  booksInflight = (async () => {
+    const res = await fetch(getApiUrl(), { cache: 'no-store' });
+    if (!res.ok) return [];
+    try {
+      const data = (await res.json()) as { books?: Book[] };
+      const books = data.books ?? [];
+      booksCache = books;
+      return books;
+    } catch {
+      return [];
+    }
+  })();
   try {
-    const data = (await res.json()) as { books?: Book[] };
-    return data.books ?? [];
-  } catch {
-    return [];
+    return await booksInflight;
+  } finally {
+    booksInflight = null;
   }
 }
 
@@ -29,6 +43,7 @@ async function writeBooks(books: Book[]): Promise<void> {
     const data = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(data.error ?? `Erreur ${res.status}`);
   }
+  booksCache = books;
 }
 
 export async function getAllBooks(): Promise<Book[]> {
