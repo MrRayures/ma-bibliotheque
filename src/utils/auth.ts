@@ -16,6 +16,8 @@ export function isLoggedIn(): boolean {
   return getAuthToken() !== null;
 }
 
+// Si /api/login.php renvoie { token }, on stocke ce token opaque.
+// Sinon (backend pas encore mis à jour), on retombe sur le password — comportement historique.
 export async function login(password: string): Promise<boolean> {
   try {
     const res = await fetch(`${window.location.origin}/api/login.php`, {
@@ -24,7 +26,9 @@ export async function login(password: string): Promise<boolean> {
       body: JSON.stringify({ password }),
     });
     if (!res.ok) return false;
-    setAuthToken(password);
+    const data = (await res.json().catch(() => ({}))) as { token?: unknown };
+    const token = typeof data.token === 'string' && data.token.length > 0 ? data.token : password;
+    setAuthToken(token);
     return true;
   } catch {
     return false;

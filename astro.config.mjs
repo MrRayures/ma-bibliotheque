@@ -27,9 +27,9 @@ const devApiMock = {
         return;
       }
 
-      // POST /api/login.php → connexion toujours acceptée en dev
+      // POST /api/login.php → connexion toujours acceptée en dev, renvoie un token opaque
       if (req.url === '/api/login.php' && req.method === 'POST') {
-        res.end(JSON.stringify({ ok: true }));
+        res.end(JSON.stringify({ ok: true, token: 'dev-session-token' }));
         return;
       }
 
