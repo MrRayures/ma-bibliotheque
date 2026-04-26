@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
 import CollectionDialog from '../components/CollectionDialog.astro';
 import Icon from '../components/Icon.astro';
+import SkeletonCard from '../components/SkeletonCard.astro';
 ---
 
 <BaseLayout
@@ -21,9 +22,7 @@ import Icon from '../components/Icon.astro';
             <div class="h-3 w-16 animate-pulse rounded bg-neutral-200"></div>
           </div>
           <div class="grid grid-cols-[repeat(auto-fill,minmax(var(--card-size),1fr))] gap-3">
-            {Array.from({ length: 6 }).map(() => (
-              <div class="aspect-square animate-pulse rounded-lg bg-neutral-200"></div>
-            ))}
+            {Array.from({ length: 6 }).map(() => <SkeletonCard />)}
           </div>
         </div>
       ))}
@@ -47,6 +46,7 @@ import { getAllBooks } from '../utils/api';
 import { isLoggedIn } from '../utils/auth';
 import type { ViewMode } from '../utils/books';
 import { getCollectionViewMode, getLetterKey, groupByCollection, setCollectionViewMode } from '../utils/books';
+import { addPageScopedListener } from '../utils/dom-events';
 import { buildLetterNav, createBookListItem, observeLetterSections, updateCardCover } from '../utils/render';
 
   document.addEventListener('astro:page-load', async () => {
@@ -277,8 +277,8 @@ import { buildLetterNav, createBookListItem, observeLetterSections, updateCardCo
 
     if (nav) observeLetterSections(container, nav);
 
-    document.addEventListener('book-deleted', (e) => {
-      const { id } = (e as CustomEvent<{ id: string }>).detail;
+    addPageScopedListener<CustomEvent<{ id: string }>>(document, 'book-deleted', (e) => {
+      const { id } = e.detail;
       const li = container.querySelector(`li[data-book-id="${id}"]`);
       const section = li?.closest('section');
       li?.remove();
@@ -287,26 +287,30 @@ import { buildLetterNav, createBookListItem, observeLetterSections, updateCardCo
       if (countEl) countEl.textContent = remaining > 0 ? `(${remaining})` : '';
     });
 
-    document.addEventListener('book-cover-updated', (e) => {
-      const { id, coverUrl } = (e as CustomEvent<{ id: string; coverUrl: string }>).detail;
-      const li = container.querySelector<HTMLElement>(`li[data-book-id="${id}"]`);
-      if (!li) return;
-      li.dataset.coverUrl = coverUrl;
-      const card = li.querySelector<HTMLElement>('.c-bookcard');
-      if (card) updateCardCover(card, coverUrl);
-    });
+    addPageScopedListener<CustomEvent<{ id: string; coverUrl: string }>>(
+      document,
+      'book-cover-updated',
+      (e) => {
+        const { id, coverUrl } = e.detail;
+        const li = container.querySelector<HTMLElement>(`li[data-book-id="${id}"]`);
+        if (!li) return;
+        li.dataset.coverUrl = coverUrl;
+        const card = li.querySelector<HTMLElement>('.c-bookcard');
+        if (card) updateCardCover(card, coverUrl);
+      },
+    );
 
     if (loading) loading.hidden = true;
     if (countEl) countEl.textContent = `(${collections.size})`;
 
-    function refreshAllToggles(): void {
+    const refreshAllToggles = (): void => {
       container.querySelectorAll<HTMLElement>('section[data-collection]').forEach(updateToggleVisibility);
-    }
+    };
 
     refreshAllToggles();
 
     let resizeTimer: ReturnType<typeof setTimeout>;
-    window.addEventListener('resize', () => {
+    addPageScopedListener(window, 'resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(refreshAllToggles, 150);
     });
@@ -315,7 +319,7 @@ import { buildLetterNav, createBookListItem, observeLetterSections, updateCardCo
       updateSectionVisibility();
     });
 
-    document.addEventListener('collection-updated', () => {
+    addPageScopedListener(document, 'collection-updated', () => {
       sessionStorage.setItem('collections-scroll', String(window.scrollY));
       window.location.reload();
     });

@@ -183,7 +183,7 @@ import Logo from '../components/Logo.astro';
     <!-- Champs supplémentaires -->
     <div id="extra-fields" class="hidden">
       <div class="mb-4">
-        <p class="mb-2 text-md font-medium">
+        <p class="mb-2 text-base font-medium">
           Collection <span class="font-normal text-text-light">(optionnel)</span>
         </p>
 
@@ -281,13 +281,13 @@ import Logo from '../components/Logo.astro';
     class="c-dialog c-dialog--md"
     aria-labelledby="search-results-title"
   >
-    <div class="c-dialog__header sticky top-0 bg-white">
-      <h2 id="search-results-title" class="c-dialog__title">Résultats</h2>
+    <div class="c-dialog-header sticky top-0 bg-white">
+      <h2 id="search-results-title" class="c-dialog-title">Résultats</h2>
       <Button id="search-results-close" variant="ghost" size="lg" aria-label="Fermer">
         <Icon name="close" size={18} slot="icon" />
       </Button>
     </div>
-    <div id="search-results-body" class="c-dialog__body">
+    <div id="search-results-body" class="c-dialog-body">
     </div>
   </dialog>
 </BaseLayout>
@@ -296,6 +296,7 @@ import Logo from '../components/Logo.astro';
   import type { Book } from '../types/library';
 import { getBookByEan, getBookById, getCollectionNames, saveBook, uploadCover, uploadCoverFile } from '../utils/api';
 import { isLoggedIn } from '../utils/auth';
+import { addPageScopedListener } from '../utils/dom-events';
 import { resizeImage } from '../utils/image';
 import type { SearchProgress, SearchResult } from '../utils/openLibrary';
 import { slugify } from '../utils/books';
@@ -362,7 +363,6 @@ import { translateToFrench } from '../utils/translate';
     let pendingCoverUrl: string | null = null;
     let pendingCoverBlob: Blob | null = null;
     let pendingOpenLibraryUrl: string | null = null;
-    let isManual = false;
 
     // ─── Helpers UI ──────────────────────────────────────────────────────────────
 
@@ -528,13 +528,11 @@ import { translateToFrench } from '../utils/translate';
       authorsInput.readOnly = false;
       publisherInput.readOnly = false;
       publishDateInput.readOnly = false;
-      isManual = true;
       showForm();
       searchAccordion.open = false;
     }
 
     async function fillBookFromResult(result: NonNullable<Awaited<ReturnType<typeof lookupByEan>>>, ean: string): Promise<void> {
-      isManual = false;
 
       const [title, subtitle, ...translatedAuthors] = await Promise.all([
         translateToFrench(result.title),
@@ -581,7 +579,6 @@ import { translateToFrench } from '../utils/translate';
     async function resetForm(): Promise<void> {
       eanInput.value = '';
       resetBookFields();
-      isManual = false;
       hideForm();
       hideAlert();
       stateSuccess.classList.add('hidden');
@@ -856,8 +853,8 @@ import { translateToFrench } from '../utils/translate';
       document.dispatchEvent(new CustomEvent('open-scanner'));
     });
 
-    document.addEventListener('ean-detected', (e) => {
-      const ean = (e as CustomEvent<{ ean: string }>).detail.ean;
+    addPageScopedListener<CustomEvent<{ ean: string }>>(document, 'ean-detected', (e) => {
+      const ean = e.detail.ean;
       eanInput.value = ean;
       triggerLookup(ean);
     });

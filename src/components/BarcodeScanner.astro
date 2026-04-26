@@ -30,7 +30,9 @@ import Icon from './Icon.astro';
 </dialog>
 
 <script>
-  import { BrowserMultiFormatReader } from '@zxing/browser';
+  import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser';
+  import { BarcodeFormat, DecodeHintType } from '@zxing/library';
+  import { addPageScopedListener } from '../utils/dom-events';
 
   document.addEventListener('astro:page-load', () => {
     const dialog = document.getElementById('scanner-dialog') as HTMLDialogElement;
@@ -38,16 +40,37 @@ import Icon from './Icon.astro';
     const statusEl = document.getElementById('scanner-status')!;
     const closeBtn = document.getElementById('scanner-close')!;
 
-    const reader = new BrowserMultiFormatReader();
+    const hints = new Map<DecodeHintType, unknown>();
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8]);
+
+    const reader = new BrowserMultiFormatReader(hints, {
+      delayBetweenScanAttempts: 300,
+      delayBetweenScanSuccess: 500,
+    });
+
+    const constraints: MediaStreamConstraints = {
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+    };
+
+    let controls: IScannerControls | null = null;
     let scanning = false;
 
     function isBookEan(code: string): boolean {
       return /^\d{13}$/.test(code) && (code.startsWith('978') || code.startsWith('979'));
     }
 
-    function closeScanner() {
-      dialog.close();
-      try { reader.reset(); } catch { /* ignore — peut échouer sur Android si déjà arrêté */ }
+    function stopStream(): void {
+      try { controls?.stop(); } catch { /* ignore — peut échouer si déjà arrêté */ }
+      controls = null;
+    }
+
+    function closeScanner(): void {
+      stopStream();
+      if (dialog.open) dialog.close();
       scanning = false;
       statusEl.textContent = 'Pointez la caméra vers le code-barres';
     }
@@ -56,26 +79,30 @@ import Icon from './Icon.astro';
     dialog.addEventListener('click', (e) => {
       if (e.target === dialog) closeScanner();
     });
-    document.addEventListener('keydown', (e) => {
+    addPageScopedListener<KeyboardEvent>(document, 'keydown', (e) => {
       if (e.key === 'Escape' && dialog.open) closeScanner();
     });
 
-    document.addEventListener('open-scanner', async () => {
+    addPageScopedListener(document, 'visibilitychange', () => {
+      if (document.hidden && scanning) closeScanner();
+    });
+
+    addPageScopedListener(document, 'open-scanner', async () => {
       if (scanning) return;
       scanning = true;
       dialog.showModal();
       statusEl.textContent = 'Démarrage de la caméra...';
 
       try {
-        await reader.decodeFromVideoDevice(undefined, video, (result, err) => {
-          if (!scanning) return; // callbacks résiduels post-reset
+        controls = await reader.decodeFromConstraints(constraints, video, (result, err) => {
+          if (!scanning) return;
           if (result) {
             const code = result.getText();
             if (!isBookEan(code)) {
               statusEl.textContent = 'Code non reconnu — pointez vers un code-barres de livre (ISBN)';
               return;
             }
-            scanning = false; // bloquer les fires suivants avant closeScanner
+            scanning = false;
             document.dispatchEvent(new CustomEvent('ean-detected', { detail: { ean: code } }));
             closeScanner();
             return;
