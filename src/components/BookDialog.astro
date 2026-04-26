@@ -8,12 +8,12 @@ import Icon from './Icon.astro';
   class="c-dialog c-dialog--book"
   aria-labelledby="dialog-book-title"
 >
-  <div class="c-book-dialog__layout">
+  <div class="c-book-dialog-layout">
     <Button id="book-dialog-close" variant="ghost" size="lg" aria-label="Fermer" class="fixed top-2 right-2 z-10 bg-white/80 backdrop-blur-sm rounded-full">
       <Icon name="close" size={24} slot="icon" />
     </Button>
     <!-- Cover -->
-    <div class="c-book-dialog__cover">
+    <div class="c-book-dialog-cover">
       <img id="dialog-cover-img" src="" alt="" class="hidden" />
       <div id="dialog-cover-placeholder" class="absolute bg-secondary inset-0 hidden items-center justify-center">
         <span class="text-5xl font-bold text-primary"></span>
@@ -32,10 +32,10 @@ import Icon from './Icon.astro';
     </div>
 
     <!-- Contenu scrollable -->
-    <div class="c-book-dialog__content">
+    <div class="c-book-dialog-content">
       <h2 id="dialog-book-title" class="text-2xl font-bold leading-snug pl-5 pr-16 pt-4 pb-2"></h2>
 
-      <dl class="flex flex-col gap-3 px-5 pb-4 text-sm">
+      <dl class="flex flex-col gap-3 px-5 pb-4 text-lg">
         <div id="dialog-row-subtitle" class="hidden">
           <dd id="dialog-subtitle" class="italic text-text-light"></dd>
         </div>
@@ -71,25 +71,33 @@ import Icon from './Icon.astro';
               href="#"
               target="_blank"
               rel="noopener noreferrer"
-              class="c-btn c-btn--ghost c-btn--sm px-0"
+              class="c-btn c-btn--secondary-outline c-btn--sm px-0"
             >
               Voir la fiche
               <Icon name="external" size={11} />
             </a>
           </dd>
         </div>
+        <div>
+          <dt class="mb-0.5 text-sm font-semibold uppercase tracking-wide text-text-light">Supprimer le livre</dt>
+          <dd>
+            <Button id="dialog-delete" variant="alert" size="sm" iconPosition="right">
+              <Icon name="delete" size={14} slot="icon" />
+              Supprimer
+            </Button>
+          </dd>
+        </div>
       </dl>
     </div>
 
     <!-- Actions sticky bottom -->
-    <div id="dialog-actions" class="c-book-dialog__actions hidden">
+    <div id="dialog-actions" class="c-book-dialog-actions hidden">
       <Button id="dialog-edit" href="#" variant="secondary-outline" size="lg" iconPosition="left" class="flex-1" data-astro-reload>
         <Icon name="edit" size={14} slot="icon" />
         Modifier
       </Button>
-      <Button id="dialog-delete" variant="alert" size="lg" iconPosition="left" class="flex-1">
-        <Icon name="delete" size={14} slot="icon" />
-        Supprimer
+      <Button id="book-dialog-close-bottom" variant="primary" size="lg" iconPosition="left" class="flex-1">
+        Fermer
       </Button>
     </div>
   </div>
@@ -98,20 +106,24 @@ import Icon from './Icon.astro';
 <script>
   import type { Book } from '../types/library';
 import { deleteBook, getBookById, saveBook, uploadCoverFile } from '../utils/api';
+import { addPageScopedListener } from '../utils/dom-events';
 import { resizeImage } from '../utils/image';
 
   document.addEventListener('astro:page-load', () => {
     const dialog = document.getElementById('book-dialog') as HTMLDialogElement;
     const addCoverBtn = document.getElementById('dialog-add-cover-btn') as HTMLButtonElement;
+    const addCoverBtnLabel = addCoverBtn.textContent ?? 'Ajouter';
     const coverFileInput = document.getElementById('dialog-cover-file') as HTMLInputElement;
     let currentBookId: string | null = null;
 
-    document.addEventListener('open-book-dialog', (e) => {
-      const { book, coverUrl, isLoggedIn } = (e as CustomEvent<{
-        book: Book;
-        coverUrl: string | null;
-        isLoggedIn: boolean;
-      }>).detail;
+    addPageScopedListener<CustomEvent<{
+      book: Book;
+      coverUrl: string | null;
+      isLoggedIn: boolean;
+    }>>(document, 'open-book-dialog', async (e) => {
+      const { book: stale, coverUrl: staleCoverUrl, isLoggedIn } = e.detail;
+      const book = (await getBookById(stale.id)) ?? stale;
+      const coverUrl = book.cover ?? staleCoverUrl;
       currentBookId = book.id;
 
       const coverImg = document.getElementById('dialog-cover-img') as HTMLImageElement;
@@ -127,6 +139,8 @@ import { resizeImage } from '../utils/image';
         coverPlaceholder.classList.add('flex');
         coverPlaceholder.querySelector('span')!.textContent = (book.title[0] ?? '?').toUpperCase();
       }
+      addCoverBtn.textContent = addCoverBtnLabel;
+      addCoverBtn.disabled = false;
       addCoverBtn.classList.toggle('hidden', !!coverUrl || !isLoggedIn);
       coverFileInput.value = '';
 
@@ -195,6 +209,7 @@ import { resizeImage } from '../utils/image';
     });
 
     document.getElementById('book-dialog-close')?.addEventListener('click', () => dialog.close());
+    document.getElementById('book-dialog-close-bottom')?.addEventListener('click', () => dialog.close());
     dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
 
     document.getElementById('dialog-delete')?.addEventListener('click', async () => {
